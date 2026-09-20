@@ -54,9 +54,20 @@ const RECOMMENDATION_STATUS = Object.freeze({
   REJECTED: "REJECTED"
 });
 
+/**
+ * Confirmed values for the recommendation decision.
+ */
+const RECOMMENDATION_VALUES = Object.freeze({
+  KEEP: "KEEP",
+  REVIEW: "REVIEW",
+  REMOVE: "REMOVE"
+});
+
 module.exports = {
   CONFIRMED_PIPELINE_FIELDS,
   PENDING_BACKEND_FIELDS,
   RECOMMENDATION_FIELDS,
-  RECOMMENDATION_STATUS
+  RECOMMENDATION_STATUS,
+  RECOMMENDATION_VALUES
 };
+

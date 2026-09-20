@@ -2,9 +2,13 @@
 
 Phase 1 provides the Express application foundation and a health endpoint.
 
-Phase 2 adds a provisional permission-recommendation domain. Its field list is
-based on the current backend plan and will be reconciled with Suraj's confirmed
-ML-ingestion payload before the real integration is built.
+Phase 2 adds a provisional permission-recommendation domain.
+
+Phase 3 implements DynamoDB persistence with clean layered architecture:
+- `src/domain/recommendation.entity.js`: Domain validation & factory (`recommendation_id` UUID generation, `created_at` timestamp, `status` defaulting to `PENDING`).
+- `src/repositories/recommendation.repository.js`: DynamoDB repository interface (`create`, `findById`) using `@aws-sdk/lib-dynamodb`.
+- `src/services/recommendation.service.js`: Domain service layer orchestrating domain validation and repository persistence.
+- `src/config/aws.js`: Configures `DynamoDBClient` and `DynamoDBDocumentClient` targeting `iam-permission-recommendations` table.
 
 ## Setup
 
@@ -35,8 +39,6 @@ pnpm test
 }
 ```
 
-`src/config/aws.js` only defines a future AWS client-creation boundary. Phase 1 does not read or write DynamoDB data and does not use IAM.
-
 ## Recommendation domain
 
 `src/domain/recommendation.schema.js` exports:
@@ -44,6 +46,6 @@ pnpm test
 - `CONFIRMED_PIPELINE_FIELDS`: the 18 field names confirmed by the data/ML pipeline.
 - `PENDING_BACKEND_FIELDS`: fields awaiting ML-output, workflow, or DynamoDB-contract confirmation.
 - `RECOMMENDATION_FIELDS`: both groups combined as the provisional backend domain.
-- `RECOMMENDATION_STATUS`: the current planned vocabulary: `PENDING`, `APPROVED`, and `REJECTED`.
+- `RECOMMENDATION_STATUS`: planned workflow vocabulary (`PENDING`, `APPROVED`, `REJECTED`).
+- `RECOMMENDATION_VALUES`: decision values (`KEEP`, `REVIEW`, `REMOVE`).
 
-It is not a database schema, API endpoint, validator, ML-ingestion implementation, or IAM-policy workflow.
