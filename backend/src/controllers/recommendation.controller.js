@@ -77,6 +77,18 @@ class RecommendationController {
       return next(error);
     }
   };
+
+  /**
+   * POST /api/v1/recommendations
+   */
+  ingestBatch = async (req, res, next) => {
+    try {
+      const result = await this.service.ingestRecommendationsBatch(req.body);
+      return res.status(200).json(result);
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
 
 module.exports = RecommendationController;

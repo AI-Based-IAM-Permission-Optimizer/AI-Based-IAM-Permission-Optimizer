@@ -77,6 +77,27 @@ test("createRecommendationEntity enforces risk_score numeric range [0.0, 1.0]", 
   );
 });
 
+test("createRecommendationEntity accepts numeric risk_weight without range restrictions", () => {
+  const entityWithIntWeight = createRecommendationEntity({
+    ...validPayload,
+    risk_weight: 8
+  });
+  assert.equal(entityWithIntWeight.risk_weight, 8);
+
+  const entityWithFloatWeight = createRecommendationEntity({
+    ...validPayload,
+    risk_weight: 0.25
+  });
+  assert.equal(entityWithFloatWeight.risk_weight, 0.25);
+});
+
+test("createRecommendationEntity rejects string risk_weight", () => {
+  assert.throws(
+    () => createRecommendationEntity({ ...validPayload, risk_weight: "8" }),
+    (err) => err instanceof ValidationError && err.message.includes("risk_weight")
+  );
+});
+
 test("createRecommendationEntity rejects missing core fields", () => {
   assert.throws(
     () => createRecommendationEntity({ ...validPayload, user_id: "" }),
@@ -95,13 +116,13 @@ test("createRecommendationEntity rejects missing core fields", () => {
 test("createRecommendationEntity preserves optional ML and enrichment fields if provided", () => {
   const entity = createRecommendationEntity({
     ...validPayload,
-    model_version: "v1.0.0",
+    model_version: "iam-risk-v1",
     confidence: 0.95,
     reason_codes: ["UNUSED_PRIVILEGE"],
     explanation: "Permission unused for 90 days"
   });
 
-  assert.equal(entity.model_version, "v1.0.0");
+  assert.equal(entity.model_version, "iam-risk-v1");
   assert.equal(entity.confidence, 0.95);
   assert.deepEqual(entity.reason_codes, ["UNUSED_PRIVILEGE"]);
   assert.equal(entity.explanation, "Permission unused for 90 days");

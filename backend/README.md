@@ -36,6 +36,9 @@ Phase 5 implements Recommendation Retrieval REST APIs:
 - `GET /api/v1/recommendations`: List recommendations with optional query filters (`approval_status`, `recommendation`, `user_id`, `role_id`).
 - `GET /api/v1/recommendations/:id`: Get single recommendation by `recommendation_id`.
 
+Phase 7 implements Real ML HTTP Ingestion API:
+- `POST /api/v1/recommendations`: Ingests batch of ML recommendation records (`model_version`, `generated_at`, `recommendations` array) with idempotency via `recommendation_id`.
+
 ## Available API
 
 `GET /api/health`
@@ -49,8 +52,10 @@ Phase 5 implements Recommendation Retrieval REST APIs:
 
 `GET /api/v1/recommendations`
 `GET /api/v1/recommendations/:id`
+`POST /api/v1/recommendations`
 `PATCH /api/v1/recommendations/:id/approve`
 `PATCH /api/v1/recommendations/:id/reject`
+
 
 
 

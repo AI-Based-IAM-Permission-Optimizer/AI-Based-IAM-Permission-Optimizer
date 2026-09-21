@@ -144,6 +144,94 @@ class RecommendationService {
 
     return await this.repository.updateApproval(recommendationId.trim(), updateData);
   }
+
+  /**
+   * Ingests a batch of ML recommendations (POST /api/v1/recommendations).
+   * Supports idempotency via recommendation_id.
+   *
+   * @param {Object} batchPayload - Top-level batch request payload.
+   * @returns {Promise<Object>} Ingestion response envelope.
+   */
+  async ingestRecommendationsBatch(batchPayload) {
+    if (!batchPayload || typeof batchPayload !== "object") {
+      throw new ValidationError("Request payload must be a valid JSON object.");
+    }
+
+    const { model_version, generated_at, recommendations } = batchPayload;
+
+    if (!model_version || typeof model_version !== "string" || model_version.trim() === "") {
+      throw new ValidationError("Field 'model_version' is required and must be a non-empty string.");
+    }
+
+    if (!generated_at || typeof generated_at !== "string" || generated_at.trim() === "") {
+      throw new ValidationError("Field 'generated_at' is required and must be a non-empty string.");
+    }
+
+    if (!Array.isArray(recommendations) || recommendations.length === 0) {
+      throw new ValidationError("Field 'recommendations' is required and must be a non-empty array.");
+    }
+
+    let acceptedCount = 0;
+    let rejectedCount = 0;
+    const recommendationIds = [];
+
+    for (const rawItem of recommendations) {
+      if (!rawItem || typeof rawItem !== "object") {
+        rejectedCount++;
+        continue;
+      }
+
+      if (!rawItem.recommendation_id || typeof rawItem.recommendation_id !== "string" || rawItem.recommendation_id.trim() === "") {
+        rejectedCount++;
+        continue;
+      }
+
+      const recId = rawItem.recommendation_id.trim();
+
+      // Inherit batch model_version and generated_at if item does not supply them
+      const itemToValidate = {
+        model_version: model_version.trim(),
+        generated_at: generated_at.trim(),
+        ...rawItem
+      };
+
+      try {
+        // Idempotency check: check if recommendation_id already exists in persistence
+        const existing = await this.repository.findById(recId);
+        if (existing) {
+          acceptedCount++;
+          recommendationIds.push(recId);
+          continue;
+        }
+
+        // Validate entity schema and build default approval fields
+        const entity = createRecommendationEntity(itemToValidate);
+        await this.repository.create(entity);
+
+        acceptedCount++;
+        recommendationIds.push(recId);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          rejectedCount++;
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // If all items failed validation and 0 items accepted, throw ValidationError
+    if (acceptedCount === 0 && rejectedCount > 0) {
+      throw new ValidationError("All recommendation items in batch failed validation.");
+    }
+
+    return {
+      status: "accepted",
+      model_version: model_version.trim(),
+      accepted_count: acceptedCount,
+      rejected_count: rejectedCount,
+      recommendation_ids: recommendationIds
+    };
+  }
 }
 
 module.exports = RecommendationService;

@@ -66,6 +66,12 @@ function createRecommendationEntity(input) {
     throw new ValidationError("Field 'risk_score' is required and must be a valid number between 0.0 and 1.0.");
   }
 
+  if (risk_weight !== undefined && risk_weight !== null) {
+    if (typeof risk_weight !== "number" || Number.isNaN(risk_weight)) {
+      throw new ValidationError("Field 'risk_weight', if provided, must be a valid numeric value.");
+    }
+  }
+
   if (!risk_level || typeof risk_level !== "string" || risk_level.trim() === "") {
     throw new ValidationError("Field 'risk_level' is required and must be a non-empty string.");
   }
