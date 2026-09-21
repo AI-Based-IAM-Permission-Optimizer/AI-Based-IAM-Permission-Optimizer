@@ -1,0 +1,161 @@
+{
+  "format": "before_iam_reference_data",
+  "purpose": "Baseline IAM policy reference data for backend policy generation/display. No AWS IAM changes are applied.",
+  "users": [
+    {
+      "user_id": "demo-developer",
+      "role_id": null,
+      "attached_policies": [
+        {
+          "policy_name": "DemoDeveloper-OverPermissioned-Policy",
+          "policy_version": "2012-10-17",
+          "statements": [
+            {
+              "effect": "Allow",
+              "action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListBucket",
+                "lambda:GetFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:InvokeFunction",
+                "ec2:DescribeInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Query",
+                "iam:GetUser",
+                "iam:GetRole",
+                "iam:ListUsers",
+                "iam:ListRoles",
+                "iam:CreateUser"
+              ],
+              "resource": "*"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user_id": "demo-data-analyst",
+      "role_id": null,
+      "attached_policies": [
+        {
+          "policy_name": "DemoDataAnalyst-OverPermissioned-Policy",
+          "policy_version": "2012-10-17",
+          "statements": [
+            {
+              "effect": "Allow",
+              "action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "athena:GetQueryResults",
+                "athena:StartQueryExecution",
+                "athena:StopQueryExecution",
+                "glue:GetDatabase",
+                "glue:GetTable",
+                "glue:GetPartitions",
+                "kms:Decrypt",
+                "kms:DescribeKey",
+                "kms:DisableKey"
+              ],
+              "resource": "*"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user_id": "demo-devops",
+      "role_id": null,
+      "attached_policies": [
+        {
+          "policy_name": "DemoDevOps-OverPermissioned-Policy",
+          "policy_version": "2012-10-17",
+          "statements": [
+            {
+              "effect": "Allow",
+              "action": [
+                "ec2:DescribeInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances",
+                "ec2:ModifyInstanceAttribute",
+                "rds:DescribeDBInstances",
+                "rds:StartDBInstance",
+                "rds:StopDBInstance",
+                "rds:ModifyDBInstance",
+                "rds:DeleteDBInstance",
+                "cloudwatch:GetMetricData",
+                "cloudwatch:PutMetricData",
+                "cloudtrail:GetTrail",
+                "cloudtrail:DescribeTrails",
+                "cloudtrail:StopLogging",
+                "iam:ListRoles",
+                "iam:GetRole",
+                "iam:AttachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:PassRole",
+                "kms:DescribeKey",
+                "kms:DisableKey"
+              ],
+              "resource": "*"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "user_id": "demo-backend",
+      "role_id": null,
+      "attached_policies": [
+        {
+          "policy_name": "DemoBackend-OverPermissioned-Policy",
+          "policy_version": "2012-10-17",
+          "statements": [
+            {
+              "effect": "Allow",
+              "action": [
+                "lambda:GetFunction",
+                "lambda:InvokeFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:DeleteFunction",
+                "apigateway:GET",
+                "apigateway:POST",
+                "apigateway:PUT",
+                "apigateway:PATCH",
+                "apigateway:DELETE",
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "sqs:GetQueueAttributes",
+                "sqs:SendMessage",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage",
+                "sns:Publish",
+                "sns:Subscribe",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:DeleteSecret"
+              ],
+              "resource": "*"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
