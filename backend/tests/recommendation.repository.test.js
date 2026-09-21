@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { PutCommand, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, ScanCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const RecommendationRepository = require("../src/repositories/recommendation.repository");
-const { RepositoryError } = require("../src/utils/errors");
+const { RepositoryError, NotFoundError, ValidationError } = require("../src/utils/errors");
 
 function createMockDocClient(sendImpl) {
   return {
@@ -104,4 +104,53 @@ test("RecommendationRepository.findAll scans table with FilterExpression when fi
   assert.ok(capturedCommand.input.FilterExpression.includes("#recommendation = :recommendation"));
   assert.equal(capturedCommand.input.ExpressionAttributeValues[":approval_status"], "PENDING");
   assert.equal(capturedCommand.input.ExpressionAttributeValues[":recommendation"], "REMOVE");
+});
+
+test("RecommendationRepository.updateApproval uses atomic ConditionExpression", async () => {
+  let capturedCommand = null;
+  const updatedItem = { ...mockItem, approval_status: "APPROVED", approved_by: "admin@company.com" };
+
+  const mockDocClient = createMockDocClient(async (command) => {
+    capturedCommand = command;
+    return { Attributes: updatedItem };
+  });
+
+  const repository = new RecommendationRepository(mockDocClient, "test-table");
+  const result = await repository.updateApproval("rec-uuid-100", {
+    approval_status: "APPROVED",
+    approved_by: "admin@company.com",
+    approved_at: "2026-09-21T12:00:00.000Z",
+    rejection_reason: null,
+    updated_at: "2026-09-21T12:00:00.000Z"
+  });
+
+  assert.deepEqual(result, updatedItem);
+  assert.ok(capturedCommand instanceof UpdateCommand);
+  assert.equal(capturedCommand.input.ConditionExpression, "attribute_exists(recommendation_id) AND approval_status = :pending_status");
+  assert.equal(capturedCommand.input.ExpressionAttributeValues[":pending_status"], "PENDING");
+});
+
+test("RecommendationRepository.updateApproval handles ConditionalCheckFailedException correctly", async () => {
+  const mockDocClient = createMockDocClient(async (command) => {
+    if (command instanceof UpdateCommand) {
+      const err = new Error("Conditional check failed");
+      err.name = "ConditionalCheckFailedException";
+      throw err;
+    }
+    if (command instanceof GetCommand) {
+      return { Item: { ...mockItem, approval_status: "APPROVED" } };
+    }
+    return {};
+  });
+
+  const repository = new RecommendationRepository(mockDocClient, "test-table");
+
+  await assert.rejects(
+    () => repository.updateApproval("rec-uuid-100", {
+      approval_status: "APPROVED",
+      approved_by: "admin@company.com",
+      updated_at: "2026-09-21T12:00:00.000Z"
+    }),
+    (err) => err instanceof ValidationError && err.message.includes("must be PENDING")
+  );
 });

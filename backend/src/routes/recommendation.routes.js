@@ -15,6 +15,8 @@ function createRecommendationRouter(controller) {
 
   router.get("/", controller.list);
   router.get("/:id", controller.getById);
+  router.patch("/:id/approve", controller.approve);
+  router.patch("/:id/reject", controller.reject);
 
   return router;
 }

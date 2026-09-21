@@ -43,6 +43,40 @@ class RecommendationController {
       return next(error);
     }
   };
+
+  /**
+   * PATCH /api/v1/recommendations/:id/approve
+   */
+  approve = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const updated = await this.service.approveRecommendation(id, req.body);
+
+      return res.status(200).json({
+        message: "Recommendation approved successfully.",
+        data: updated
+      });
+    } catch (error) {
+      return next(error);
+    }
+  };
+
+  /**
+   * PATCH /api/v1/recommendations/:id/reject
+   */
+  reject = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const updated = await this.service.rejectRecommendation(id, req.body);
+
+      return res.status(200).json({
+        message: "Recommendation rejected successfully.",
+        data: updated
+      });
+    } catch (error) {
+      return next(error);
+    }
+  };
 }
 
 module.exports = RecommendationController;

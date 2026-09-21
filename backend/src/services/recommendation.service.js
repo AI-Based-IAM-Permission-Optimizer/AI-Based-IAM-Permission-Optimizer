@@ -84,6 +84,66 @@ class RecommendationService {
 
     return await this.repository.findAll(validatedFilters);
   }
+
+  /**
+   * Approves a PENDING recommendation (PENDING -> APPROVED transition).
+   * Updates only finalized fields: approval_status, approved_by, approved_at, rejection_reason, updated_at.
+   *
+   * @param {string} recommendationId - ID of recommendation to approve.
+   * @param {Object} payload - Body containing approved_by.
+   * @returns {Promise<Object>} Updated recommendation entity.
+   */
+  async approveRecommendation(recommendationId, payload = {}) {
+    if (!recommendationId || typeof recommendationId !== "string" || recommendationId.trim() === "") {
+      throw new ValidationError("Recommendation ID must be a non-empty string.");
+    }
+
+    const { approved_by } = payload;
+    if (!approved_by || typeof approved_by !== "string" || approved_by.trim() === "") {
+      throw new ValidationError("Field 'approved_by' is required and must be a non-empty string.");
+    }
+
+    const now = new Date().toISOString();
+    const updateData = {
+      approval_status: APPROVAL_STATUS.APPROVED,
+      approved_by: approved_by.trim(),
+      approved_at: now,
+      rejection_reason: null,
+      updated_at: now
+    };
+
+    return await this.repository.updateApproval(recommendationId.trim(), updateData);
+  }
+
+  /**
+   * Rejects a PENDING recommendation (PENDING -> REJECTED transition).
+   * Updates only finalized fields: approval_status, rejection_reason, updated_at.
+   *
+   * @param {string} recommendationId - ID of recommendation to reject.
+   * @param {Object} [payload] - Optional body containing rejection_reason.
+   * @returns {Promise<Object>} Updated recommendation entity.
+   */
+  async rejectRecommendation(recommendationId, payload = {}) {
+    if (!recommendationId || typeof recommendationId !== "string" || recommendationId.trim() === "") {
+      throw new ValidationError("Recommendation ID must be a non-empty string.");
+    }
+
+    let reason = null;
+    if (payload.rejection_reason && typeof payload.rejection_reason === "string" && payload.rejection_reason.trim()) {
+      reason = payload.rejection_reason.trim();
+    }
+
+    const now = new Date().toISOString();
+    const updateData = {
+      approval_status: APPROVAL_STATUS.REJECTED,
+      approved_by: null,
+      approved_at: null,
+      rejection_reason: reason,
+      updated_at: now
+    };
+
+    return await this.repository.updateApproval(recommendationId.trim(), updateData);
+  }
 }
 
 module.exports = RecommendationService;

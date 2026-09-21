@@ -49,6 +49,9 @@ Phase 5 implements Recommendation Retrieval REST APIs:
 
 `GET /api/v1/recommendations`
 `GET /api/v1/recommendations/:id`
+`PATCH /api/v1/recommendations/:id/approve`
+`PATCH /api/v1/recommendations/:id/reject`
+
 
 
 ## Recommendation domain

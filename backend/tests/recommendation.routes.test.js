@@ -7,10 +7,14 @@ const RecommendationController = require("../src/controllers/recommendation.cont
 const RecommendationService = require("../src/services/recommendation.service");
 const { getMockRecommendations } = require("../src/data/mockRecommendations");
 const { errorHandler, notFoundHandler } = require("../src/middleware/error.middleware");
+const { NotFoundError, ValidationError } = require("../src/utils/errors");
 
 function createTestApp() {
   const itemsMap = new Map();
-  getMockRecommendations().forEach((item) => itemsMap.set(item.recommendation_id, item));
+  getMockRecommendations().forEach((item) => {
+    // Clone item to isolate state per test app instance
+    itemsMap.set(item.recommendation_id, { ...item });
+  });
 
   const mockRepo = {
     findById: async (id) => itemsMap.get(id) || null,
@@ -29,6 +33,26 @@ function createTestApp() {
         result = result.filter((i) => i.role_id === filters.role_id);
       }
       return result;
+    },
+    updateApproval: async (id, updateData) => {
+      const existing = itemsMap.get(id);
+      if (!existing) {
+        throw new NotFoundError(`Recommendation with ID '${id}' was not found.`);
+      }
+      if (existing.approval_status !== "PENDING") {
+        throw new ValidationError(
+          `Cannot update recommendation '${id}' because its current approval_status is '${existing.approval_status}' (must be PENDING).`
+        );
+      }
+
+      // Update only finalized approval fields without writing legacy status/reviewed_at
+      existing.approval_status = updateData.approval_status;
+      existing.approved_by = updateData.approved_by;
+      existing.approved_at = updateData.approved_at;
+      existing.rejection_reason = updateData.rejection_reason;
+      existing.updated_at = updateData.updated_at;
+
+      return existing;
     }
   };
 
@@ -42,11 +66,11 @@ function createTestApp() {
   app.use(notFoundHandler);
   app.use(errorHandler);
 
-  return app;
+  return { app, itemsMap };
 }
 
 test("GET /api/v1/recommendations returns 200 OK with recommendation items", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations");
 
   assert.equal(response.status, 200);
@@ -56,7 +80,7 @@ test("GET /api/v1/recommendations returns 200 OK with recommendation items", asy
 });
 
 test("GET /api/v1/recommendations filters by recommendation decision", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?recommendation=REMOVE");
 
   assert.equal(response.status, 200);
@@ -65,7 +89,7 @@ test("GET /api/v1/recommendations filters by recommendation decision", async () 
 });
 
 test("GET /api/v1/recommendations filters by approval_status", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?approval_status=PENDING");
 
   assert.equal(response.status, 200);
@@ -73,7 +97,7 @@ test("GET /api/v1/recommendations filters by approval_status", async () => {
 });
 
 test("GET /api/v1/recommendations returns 400 for invalid approval_status filter", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?approval_status=INVALID_STATUS");
 
   assert.equal(response.status, 400);
@@ -81,7 +105,7 @@ test("GET /api/v1/recommendations returns 400 for invalid approval_status filter
 });
 
 test("GET /api/v1/recommendations returns 400 for invalid recommendation filter", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?recommendation=INVALID_REC");
 
   assert.equal(response.status, 400);
@@ -89,7 +113,7 @@ test("GET /api/v1/recommendations returns 400 for invalid recommendation filter"
 });
 
 test("GET /api/v1/recommendations/:id returns 200 OK for valid ID", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations/rec-mock-remove-003");
 
   assert.equal(response.status, 200);
@@ -98,9 +122,103 @@ test("GET /api/v1/recommendations/:id returns 200 OK for valid ID", async () => 
 });
 
 test("GET /api/v1/recommendations/:id returns 404 Not Found for non-existent ID", async () => {
-  const app = createTestApp();
+  const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations/non-existent-id");
 
   assert.equal(response.status, 404);
   assert.ok(response.body.error.message.includes("was not found"));
+});
+
+/* ========================================================================== */
+/* PHASE 6 APPROVE / REJECT WORKFLOW TESTS                                    */
+/* ========================================================================== */
+
+test("PATCH /api/v1/recommendations/:id/approve updates PENDING to APPROVED correctly", async () => {
+  const { app } = createTestApp();
+  const response = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-remove-003/approve")
+    .send({ approved_by: "admin@company.com" });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.message, "Recommendation approved successfully.");
+
+  const item = response.body.data;
+  assert.equal(item.approval_status, "APPROVED");
+  assert.equal(item.approved_by, "admin@company.com");
+  assert.ok(item.approved_at);
+  assert.equal(item.rejection_reason, null);
+  assert.ok(item.updated_at);
+
+  // Assert legacy compatibility fields are NOT modified
+  assert.equal(item.status, "PENDING");
+  assert.equal(item.reviewed_at, null);
+});
+
+test("PATCH /api/v1/recommendations/:id/approve rejects missing or empty approved_by", async () => {
+  const { app } = createTestApp();
+  const response = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-remove-003/approve")
+    .send({ approved_by: "   " });
+
+  assert.equal(response.status, 400);
+  assert.ok(response.body.error.message.includes("Field 'approved_by' is required"));
+});
+
+test("PATCH /api/v1/recommendations/:id/reject updates PENDING to REJECTED correctly", async () => {
+  const { app } = createTestApp();
+  const response = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-review-002/reject")
+    .send({ rejection_reason: "Permission required for compliance reports." });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.message, "Recommendation rejected successfully.");
+
+  const item = response.body.data;
+  assert.equal(item.approval_status, "REJECTED");
+  assert.equal(item.approved_by, null);
+  assert.equal(item.approved_at, null);
+  assert.equal(item.rejection_reason, "Permission required for compliance reports.");
+  assert.ok(item.updated_at);
+
+  // Assert legacy compatibility fields are NOT modified
+  assert.equal(item.status, "PENDING");
+  assert.equal(item.reviewed_at, null);
+});
+
+test("PATCH approve/reject returns 400 if recommendation is already APPROVED or REJECTED", async () => {
+  const { app } = createTestApp();
+
+  // First approval succeeds
+  const firstApprove = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-remove-003/approve")
+    .send({ approved_by: "admin@company.com" });
+  assert.equal(firstApprove.status, 200);
+
+  // Second approval fails with 400
+  const secondApprove = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-remove-003/approve")
+    .send({ approved_by: "admin2@company.com" });
+  assert.equal(secondApprove.status, 400);
+  assert.ok(secondApprove.body.error.message.includes("must be PENDING"));
+
+  // Rejection of already APPROVED item fails with 400
+  const rejectApproved = await request(app)
+    .patch("/api/v1/recommendations/rec-mock-remove-003/reject")
+    .send({ rejection_reason: "Not needed" });
+  assert.equal(rejectApproved.status, 400);
+  assert.ok(rejectApproved.body.error.message.includes("must be PENDING"));
+});
+
+test("PATCH approve/reject returns 404 for non-existent ID", async () => {
+  const { app } = createTestApp();
+
+  const responseApprove = await request(app)
+    .patch("/api/v1/recommendations/non-existent-id/approve")
+    .send({ approved_by: "admin@company.com" });
+  assert.equal(responseApprove.status, 404);
+
+  const responseReject = await request(app)
+    .patch("/api/v1/recommendations/non-existent-id/reject")
+    .send({ rejection_reason: "Reason" });
+  assert.equal(responseReject.status, 404);
 });
