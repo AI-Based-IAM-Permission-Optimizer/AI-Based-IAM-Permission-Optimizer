@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { PutCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const RecommendationRepository = require("../src/repositories/recommendation.repository");
 const { RepositoryError } = require("../src/utils/errors");
 
@@ -82,4 +82,26 @@ test("RecommendationRepository.findById returns null if item does not exist", as
   const result = await repository.findById("non-existent-id");
 
   assert.equal(result, null);
+});
+
+test("RecommendationRepository.findAll scans table with FilterExpression when filters provided", async () => {
+  let capturedCommand = null;
+  const mockDocClient = createMockDocClient(async (command) => {
+    capturedCommand = command;
+    return { Items: [mockItem] };
+  });
+
+  const repository = new RecommendationRepository(mockDocClient, "test-table");
+  const results = await repository.findAll({
+    approval_status: "PENDING",
+    recommendation: "REMOVE"
+  });
+
+  assert.deepEqual(results, [mockItem]);
+  assert.ok(capturedCommand instanceof ScanCommand);
+  assert.equal(capturedCommand.input.TableName, "test-table");
+  assert.ok(capturedCommand.input.FilterExpression.includes("#approval_status = :approval_status"));
+  assert.ok(capturedCommand.input.FilterExpression.includes("#recommendation = :recommendation"));
+  assert.equal(capturedCommand.input.ExpressionAttributeValues[":approval_status"], "PENDING");
+  assert.equal(capturedCommand.input.ExpressionAttributeValues[":recommendation"], "REMOVE");
 });

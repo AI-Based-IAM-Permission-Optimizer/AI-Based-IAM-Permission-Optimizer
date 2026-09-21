@@ -1,4 +1,4 @@
-const { PutCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { PutCommand, GetCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { getTableName } = require("../config/aws");
 const { RepositoryError } = require("../utils/errors");
 
@@ -66,6 +66,51 @@ class RecommendationRepository {
     } catch (error) {
       throw new RepositoryError(
         `Failed to retrieve recommendation '${recommendationId}' from DynamoDB: ${error.message}`,
+        error
+      );
+    }
+  }
+
+  /**
+   * Retrieves recommendations with optional simple FilterExpression support.
+   *
+   * @param {Object} [filters] - Supported filters: approval_status, recommendation, user_id, role_id.
+   * @returns {Promise<Array<Object>>} List of matching recommendation items.
+   */
+  async findAll(filters = {}) {
+    const filterExpressions = [];
+    const expressionAttributeNames = {};
+    const expressionAttributeValues = {};
+
+    const allowedKeys = ["approval_status", "recommendation", "user_id", "role_id"];
+
+    for (const key of allowedKeys) {
+      if (filters[key] !== undefined && filters[key] !== null && String(filters[key]).trim() !== "") {
+        const attrKey = `#${key}`;
+        const valKey = `:${key}`;
+
+        expressionAttributeNames[attrKey] = key;
+        expressionAttributeValues[valKey] = String(filters[key]).trim();
+        filterExpressions.push(`${attrKey} = ${valKey}`);
+      }
+    }
+
+    const params = {
+      TableName: this.tableName
+    };
+
+    if (filterExpressions.length > 0) {
+      params.FilterExpression = filterExpressions.join(" AND ");
+      params.ExpressionAttributeNames = expressionAttributeNames;
+      params.ExpressionAttributeValues = expressionAttributeValues;
+    }
+
+    try {
+      const response = await this.docClient.send(new ScanCommand(params));
+      return response.Items || [];
+    } catch (error) {
+      throw new RepositoryError(
+        `Failed to scan recommendations from DynamoDB table '${this.tableName}': ${error.message}`,
         error
       );
     }
