@@ -8,7 +8,7 @@ const validPayload = {
   role_id: "rol-456",
   action: "s3:GetObject",
   resource: "arn:aws:s3:::my-bucket/*",
-  risk_score: 85.5,
+  risk_score: 0.85,
   risk_level: "HIGH",
   recommendation: "REMOVE"
 };
@@ -18,16 +18,30 @@ test("createRecommendationEntity generates backend fields correctly", () => {
 
   assert.ok(entity.recommendation_id);
   assert.equal(typeof entity.recommendation_id, "string");
+  assert.equal(entity.approval_status, "PENDING");
   assert.equal(entity.status, "PENDING");
+  assert.equal(entity.approved_by, null);
+  assert.equal(entity.approved_at, null);
+  assert.equal(entity.rejection_reason, null);
+  assert.equal(entity.policy_version, null);
+  assert.ok(entity.updated_at);
   assert.ok(entity.created_at);
-  assert.equal(entity.reviewed_at, null);
   assert.equal(entity.user_id, "usr-123");
   assert.equal(entity.role_id, "rol-456");
   assert.equal(entity.action, "s3:GetObject");
   assert.equal(entity.resource, "arn:aws:s3:::my-bucket/*");
-  assert.equal(entity.risk_score, 85.5);
+  assert.equal(entity.risk_score, 0.85);
   assert.equal(entity.risk_level, "HIGH");
   assert.equal(entity.recommendation, "REMOVE");
+});
+
+test("createRecommendationEntity preserves ML-provided recommendation_id idempotency key", () => {
+  const entity = createRecommendationEntity({
+    ...validPayload,
+    recommendation_id: "ml-rec-custom-id-99"
+  });
+
+  assert.equal(entity.recommendation_id, "ml-rec-custom-id-99");
 });
 
 test("createRecommendationEntity accepts allowed recommendation values KEEP, REVIEW, REMOVE", () => {
@@ -44,14 +58,22 @@ test("createRecommendationEntity rejects invalid recommendation value", () => {
   );
 });
 
-test("createRecommendationEntity rejects non-numeric risk_score", () => {
+test("createRecommendationEntity enforces risk_score numeric range [0.0, 1.0]", () => {
   assert.throws(
-    () => createRecommendationEntity({ ...validPayload, risk_score: "85.5" }),
+    () => createRecommendationEntity({ ...validPayload, risk_score: "0.85" }),
     (err) => err instanceof ValidationError && err.message.includes("risk_score")
   );
   assert.throws(
     () => createRecommendationEntity({ ...validPayload, risk_score: NaN }),
     (err) => err instanceof ValidationError && err.message.includes("risk_score")
+  );
+  assert.throws(
+    () => createRecommendationEntity({ ...validPayload, risk_score: -0.1 }),
+    (err) => err instanceof ValidationError && err.message.includes("between 0.0 and 1.0")
+  );
+  assert.throws(
+    () => createRecommendationEntity({ ...validPayload, risk_score: 1.5 }),
+    (err) => err instanceof ValidationError && err.message.includes("between 0.0 and 1.0")
   );
 });
 
@@ -70,13 +92,17 @@ test("createRecommendationEntity rejects missing core fields", () => {
   );
 });
 
-test("createRecommendationEntity preserves optional enrichment fields if provided", () => {
+test("createRecommendationEntity preserves optional ML and enrichment fields if provided", () => {
   const entity = createRecommendationEntity({
     ...validPayload,
-    usage_count: 5,
-    resource_scope: "GLOBAL"
+    model_version: "v1.0.0",
+    confidence: 0.95,
+    reason_codes: ["UNUSED_PRIVILEGE"],
+    explanation: "Permission unused for 90 days"
   });
 
-  assert.equal(entity.usage_count, 5);
-  assert.equal(entity.resource_scope, "GLOBAL");
+  assert.equal(entity.model_version, "v1.0.0");
+  assert.equal(entity.confidence, 0.95);
+  assert.deepEqual(entity.reason_codes, ["UNUSED_PRIVILEGE"]);
+  assert.equal(entity.explanation, "Permission unused for 90 days");
 });

@@ -10,6 +10,10 @@ Phase 3 implements DynamoDB persistence with clean layered architecture:
 - `src/services/recommendation.service.js`: Domain service layer orchestrating domain validation and repository persistence.
 - `src/config/aws.js`: Configures `DynamoDBClient` and `DynamoDBDocumentClient` targeting `iam-permission-recommendations` table.
 
+Phase 4 adds controlled mock recommendation dataset:
+- `src/data/mockRecommendations.js`: Provides valid mock records covering `KEEP`, `REVIEW`, and `REMOVE` decisions using the finalized 21-field ML contract (`model_version: "iam-risk-v1"`), plus seeding utility functions.
+
+
 ## Setup
 
 1. Copy `.env.example` to `.env`.

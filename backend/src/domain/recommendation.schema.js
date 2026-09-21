@@ -1,9 +1,5 @@
 /**
- * Provisional backend domain for an ML-generated IAM permission recommendation.
- *
- * Confirmed pipeline fields are field names only. Their final HTTP payload
- * structure, data types, and validation rules must be agreed with the ML/data
- * team before Phase 7 ingestion work begins.
+ * Backend domain for ML-generated IAM permission recommendations.
  */
 const CONFIRMED_PIPELINE_FIELDS = Object.freeze([
   "user_id",
@@ -27,8 +23,7 @@ const CONFIRMED_PIPELINE_FIELDS = Object.freeze([
 ]);
 
 /**
- * These fields are intentionally provisional. They require confirmation of
- * the ML output, backend workflow, or DynamoDB persistence contract.
+ * Provisional backend fields preserved for Phase 2 test compatibility.
  */
 const PENDING_BACKEND_FIELDS = Object.freeze([
   "recommendation_id",
@@ -45,17 +40,45 @@ const RECOMMENDATION_FIELDS = Object.freeze([
 ]);
 
 /**
- * Current planned workflow vocabulary. Approval transitions and IAM effects
- * are not implemented or confirmed by this Phase 2 definition.
+ * Finalized ML and Backend Integration Recommendation fields contract.
  */
-const RECOMMENDATION_STATUS = Object.freeze({
+const FINAL_RECOMMENDATION_FIELDS = Object.freeze([
+  "recommendation_id",
+  "user_id",
+  "role_id",
+  "action",
+  "resource",
+  "risk_score",
+  "risk_weight",
+  "risk_level",
+  "prediction",
+  "recommendation",
+  "confidence",
+  "reason_codes",
+  "explanation",
+  "model_version",
+  "generated_at",
+  "approval_status",
+  "approved_by",
+  "approved_at",
+  "rejection_reason",
+  "policy_version",
+  "updated_at"
+]);
+
+/**
+ * Finalized approval status vocabulary.
+ */
+const APPROVAL_STATUS = Object.freeze({
   PENDING: "PENDING",
   APPROVED: "APPROVED",
   REJECTED: "REJECTED"
 });
 
+const RECOMMENDATION_STATUS = APPROVAL_STATUS;
+
 /**
- * Confirmed values for the recommendation decision.
+ * Confirmed values for recommendation decision.
  */
 const RECOMMENDATION_VALUES = Object.freeze({
   KEEP: "KEEP",
@@ -67,7 +90,8 @@ module.exports = {
   CONFIRMED_PIPELINE_FIELDS,
   PENDING_BACKEND_FIELDS,
   RECOMMENDATION_FIELDS,
+  FINAL_RECOMMENDATION_FIELDS,
+  APPROVAL_STATUS,
   RECOMMENDATION_STATUS,
   RECOMMENDATION_VALUES
 };
-

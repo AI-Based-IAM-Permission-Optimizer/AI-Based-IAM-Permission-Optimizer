@@ -12,14 +12,20 @@ function createMockDocClient(sendImpl) {
 
 const mockItem = {
   recommendation_id: "rec-uuid-100",
+  approval_status: "PENDING",
   status: "PENDING",
   created_at: "2026-09-20T10:00:00.000Z",
+  updated_at: "2026-09-20T10:00:00.000Z",
+  approved_by: null,
+  approved_at: null,
+  rejection_reason: null,
+  policy_version: null,
   reviewed_at: null,
   user_id: "usr-01",
   role_id: "rol-01",
   action: "dynamodb:DeleteItem",
   resource: "arn:aws:dynamodb:ap-south-1:123456789012:table/MyTable",
-  risk_score: 90,
+  risk_score: 0.90,
   risk_level: "HIGH",
   recommendation: "REMOVE"
 };

@@ -22,7 +22,7 @@ const validPayload = {
   role_id: "rol-88",
   action: "iam:CreateUser",
   resource: "*",
-  risk_score: 95.0,
+  risk_score: 0.95,
   risk_level: "HIGH",
   recommendation: "REMOVE"
 };
@@ -34,10 +34,27 @@ test("RecommendationService.createRecommendation builds entity and persists it",
   const result = await service.createRecommendation(validPayload);
 
   assert.ok(result.recommendation_id);
+  assert.equal(result.approval_status, "PENDING");
   assert.equal(result.status, "PENDING");
   assert.equal(result.recommendation, "REMOVE");
+  assert.equal(result.risk_score, 0.95);
   assert.equal(mockRepo.items.size, 1);
   assert.deepEqual(mockRepo.items.get(result.recommendation_id), result);
+});
+
+test("RecommendationService.createRecommendation preserves ML recommendation_id", async () => {
+  const mockRepo = createMockRepository();
+  const service = new RecommendationService(mockRepo);
+
+  const payloadWithId = {
+    ...validPayload,
+    recommendation_id: "ml-rec-id-77"
+  };
+
+  const result = await service.createRecommendation(payloadWithId);
+
+  assert.equal(result.recommendation_id, "ml-rec-id-77");
+  assert.deepEqual(mockRepo.items.get("ml-rec-id-77"), result);
 });
 
 test("RecommendationService.getRecommendationById returns item when found", async () => {
