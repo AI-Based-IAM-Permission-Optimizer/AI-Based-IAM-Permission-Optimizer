@@ -1,0 +1,12 @@
+{
+  "usage_rows": 20000,
+  "usage_columns": 25,
+  "users": 100,
+  "roles": 20,
+  "unique_actions_used": 3882,
+  "risk_catalog_actions": 4005,
+  "duplicate_rows": 0,
+  "missing_cells": 5342,
+  "count_mismatch_rows": 0,
+  "risk_catalog_conflicting_actions": 0
+}

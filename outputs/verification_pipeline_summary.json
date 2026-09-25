@@ -1,0 +1,148 @@
+{
+  "timestamp": "2026-09-24 20:01:46",
+  "notebook_executions": [
+    {
+      "notebook": "01_data_understanding.ipynb",
+      "status": "PASSED",
+      "time_seconds": 2.61
+    },
+    {
+      "notebook": "02_data_cleaning.ipynb",
+      "status": "PASSED",
+      "time_seconds": 2.47
+    },
+    {
+      "notebook": "03_feature_engineering.ipynb",
+      "status": "PASSED",
+      "time_seconds": 2.66
+    },
+    {
+      "notebook": "04_label_creation.ipynb",
+      "status": "PASSED",
+      "time_seconds": 3.84
+    },
+    {
+      "notebook": "05_weighted_baseline.ipynb",
+      "status": "PASSED",
+      "time_seconds": 3.99
+    },
+    {
+      "notebook": "06_logistic_regression.ipynb",
+      "status": "PASSED",
+      "time_seconds": 8.25
+    },
+    {
+      "notebook": "07_random_forest.ipynb",
+      "status": "PASSED",
+      "time_seconds": 735.05
+    },
+    {
+      "notebook": "08_xgboost.ipynb",
+      "status": "PASSED",
+      "time_seconds": 24.68
+    },
+    {
+      "notebook": "09_model_evaluation.ipynb",
+      "status": "PASSED",
+      "time_seconds": 24.18
+    },
+    {
+      "notebook": "10_final_model.ipynb",
+      "status": "PASSED",
+      "time_seconds": 9.84
+    }
+  ],
+  "file_verifications": {
+    "cleaned_dataset.csv": {
+      "rows": 20000,
+      "cols": 27,
+      "status": "OK",
+      "missing_required_cols": []
+    },
+    "engineered_dataset.csv": {
+      "rows": 20000,
+      "cols": 38,
+      "status": "OK",
+      "missing_required_cols": []
+    },
+    "labeled_dataset.csv": {
+      "rows": 20000,
+      "cols": 40,
+      "status": "OK",
+      "missing_required_cols": []
+    },
+    "splits.csv": {
+      "rows": 20000,
+      "cols": 3,
+      "status": "OK",
+      "missing_required_cols": []
+    }
+  },
+  "artifact_verifications": {
+    "weighted_baseline.joblib": {
+      "status": "OK",
+      "size_kb": 0.2
+    },
+    "logistic_regression_candidate.joblib": {
+      "status": "OK",
+      "size_kb": 10.7
+    },
+    "random_forest_candidate.joblib": {
+      "status": "OK",
+      "size_kb": 11531.9
+    },
+    "xgboost_candidate.joblib": {
+      "status": "OK",
+      "size_kb": 640.0
+    },
+    "split_metadata.json": {
+      "status": "OK",
+      "size_kb": 0.1
+    },
+    "model_selection.json": {
+      "status": "OK",
+      "size_kb": 0.2
+    },
+    "iam_permission_model_v2_final.joblib": {
+      "status": "OK",
+      "size_kb": 776.0
+    },
+    "iam_permission_model_v2_metadata.json": {
+      "status": "OK",
+      "size_kb": 2.1
+    }
+  },
+  "pipeline_consistency": {
+    "split_counts": {
+      "train": 12000,
+      "test": 4000,
+      "validation": 4000
+    },
+    "target_proportions": {
+      "0": 0.8,
+      "1": 0.2
+    },
+    "predictions_summary": {
+      "rows": 4000,
+      "risk_score_min": 0.0008,
+      "risk_score_max": 0.997479,
+      "recommendation_distribution": {
+        "KEEP": 3147,
+        "REMOVE": 748,
+        "REVIEW": 105
+      },
+      "null_counts": {
+        "user_id": 0,
+        "action": 0,
+        "risk_score": 0,
+        "prediction": 0,
+        "recommendation": 0
+      }
+    }
+  },
+  "diagnostic_status": "PASSED",
+  "efficiency_profile": {
+    "total_notebook_time_seconds": 817.58,
+    "diagnostic_time_seconds": 7.58
+  }
+}

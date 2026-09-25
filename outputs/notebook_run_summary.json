@@ -1,0 +1,59 @@
+{
+  "run_at": "2026-09-24T13:50:46Z",
+  "note": "01-06 from previous run, 07-10 re-run after RF n_jobs fix",
+  "notebooks": [
+    {
+      "name": "01_data_understanding.ipynb",
+      "status": "PASS",
+      "elapsed_s": 7
+    },
+    {
+      "name": "02_data_cleaning.ipynb",
+      "status": "PASS",
+      "elapsed_s": 6
+    },
+    {
+      "name": "03_feature_engineering.ipynb",
+      "status": "PASS",
+      "elapsed_s": 6
+    },
+    {
+      "name": "04_label_creation.ipynb",
+      "status": "PASS",
+      "elapsed_s": 7
+    },
+    {
+      "name": "05_weighted_baseline.ipynb",
+      "status": "PASS",
+      "elapsed_s": 7
+    },
+    {
+      "name": "06_logistic_regression.ipynb",
+      "status": "PASS",
+      "elapsed_s": 11
+    },
+    {
+      "name": "07_random_forest.ipynb",
+      "status": "PASS",
+      "elapsed_s": 196
+    },
+    {
+      "name": "08_xgboost.ipynb",
+      "status": "PASS",
+      "elapsed_s": 24
+    },
+    {
+      "name": "09_model_evaluation.ipynb",
+      "status": "PASS",
+      "elapsed_s": 24
+    },
+    {
+      "name": "10_final_model.ipynb",
+      "status": "PASS",
+      "elapsed_s": 11
+    }
+  ],
+  "passed": 10,
+  "total": 10,
+  "all_passed": true
+}

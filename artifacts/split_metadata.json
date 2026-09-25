@@ -1,0 +1,6 @@
+{
+  "usage_only_grouped_cv_f1_mean": 0.49871074203404786,
+  "train_users": 60,
+  "validation_users": 20,
+  "test_users": 20
+}

@@ -1,0 +1,93 @@
+{
+  "selection_date": "2026-09-24",
+  "selected_model": "xgboost",
+  "artifact_path": "artifacts/xgboost_candidate.joblib",
+  "selection_criteria": [
+    "PR-AUC",
+    "excessive_class_precision",
+    "excessive_class_recall",
+    "F1",
+    "calibration_brier_score",
+    "unseen_user_performance",
+    "unseen_role_action_performance",
+    "train_validation_gap"
+  ],
+  "models": {
+    "logistic_regression": {
+      "val_pr_auc": 0.5906,
+      "val_roc_auc": 0.8407,
+      "val_precision": 0.5643,
+      "val_recall": 0.625,
+      "val_f1": 0.5931,
+      "brier_score": 0.1642,
+      "opt_threshold": 0.649,
+      "unseen_user_pr_auc": 0.5891,
+      "unseen_user_roc_auc": 0.8285,
+      "unseen_user_f1": 0.5684,
+      "unseen_ra_pr_auc": 0.7376,
+      "unseen_ra_roc_auc": 0.8236,
+      "unseen_ra_f1": 0.6609,
+      "train_pr_auc": 0.5807,
+      "gap_pr_auc": -0.01,
+      "gap_roc_auc": -0.0127,
+      "gap_f1": -0.0139,
+      "overfitting_verdict": "OK"
+    },
+    "random_forest": {
+      "val_pr_auc": 0.6873,
+      "val_roc_auc": 0.8576,
+      "val_precision": 0.5986,
+      "val_recall": 0.6225,
+      "val_f1": 0.6103,
+      "brier_score": 0.1447,
+      "opt_threshold": 0.625,
+      "unseen_user_pr_auc": 0.6725,
+      "unseen_user_roc_auc": 0.8525,
+      "unseen_user_f1": 0.5958,
+      "unseen_ra_pr_auc": 0.7978,
+      "unseen_ra_roc_auc": 0.8537,
+      "unseen_ra_f1": 0.6821,
+      "train_pr_auc": 0.735,
+      "gap_pr_auc": 0.0476,
+      "gap_roc_auc": 0.037,
+      "gap_f1": 0.039,
+      "overfitting_verdict": "OK"
+    },
+    "xgboost": {
+      "val_pr_auc": 0.9784,
+      "val_roc_auc": 0.992,
+      "val_precision": 0.922,
+      "val_recall": 0.945,
+      "val_f1": 0.9333,
+      "brier_score": 0.0276,
+      "opt_threshold": 0.535,
+      "unseen_user_pr_auc": 0.9733,
+      "unseen_user_roc_auc": 0.9904,
+      "unseen_user_f1": 0.9125,
+      "unseen_ra_pr_auc": 0.984,
+      "unseen_ra_roc_auc": 0.9892,
+      "unseen_ra_f1": 0.9375,
+      "train_pr_auc": 0.9982,
+      "gap_pr_auc": 0.0197,
+      "gap_roc_auc": 0.0075,
+      "gap_f1": 0.0418,
+      "overfitting_verdict": "OK"
+    }
+  },
+  "score_comparison": {
+    "pr_auc_winner": "xgboost",
+    "precision_winner": "xgboost",
+    "recall_winner": "xgboost",
+    "f1_winner": "xgboost",
+    "brier_score_winner": "xgboost",
+    "unseen_user_pr_auc_winner": "xgboost",
+    "unseen_ra_pr_auc_winner": "xgboost",
+    "smallest_train_val_gap": "logistic_regression"
+  },
+  "rationale": "XGBoost wins on all primary metrics: PR-AUC (+0.291 over RF, +0.388 over LR), precision (0.922 vs 0.599/0.564), recall (0.945 vs 0.623/0.625), F1 (0.933 vs 0.610/0.593), and Brier score (0.028 vs 0.145/0.164). It also generalizes to unseen users (PR-AUC 0.973) and unseen role-action pairs (PR-AUC 0.984) with no meaningful degradation. The train-validation gap of +0.020 (PR-AUC) is well within acceptable bounds and XGBoost trees use only 52% of their theoretical max capacity.",
+  "rejected_models": {
+    "random_forest": "Val PR-AUC 0.687 is 29 points below XGBoost. Brier score 5.2x worse.",
+    "logistic_regression": "Val PR-AUC 0.591 is insufficient. Linear model cannot capture complex IAM permission patterns."
+  },
+  "selected_model_name": "xgboost"
+}

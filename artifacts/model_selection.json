@@ -1,0 +1,6 @@
+{
+  "selected_model_name": "xgboost",
+  "selection_metric": "validation_pr_auc",
+  "validation_pr_auc": 0.9784405603318407,
+  "validation_threshold_reference": 0.53
+}

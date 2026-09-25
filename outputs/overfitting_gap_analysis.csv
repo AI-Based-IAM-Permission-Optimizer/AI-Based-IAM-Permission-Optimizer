@@ -1,0 +1,4 @@
+model,train_pr_auc,val_pr_auc,gap_pr_auc,train_roc_auc,val_roc_auc,gap_roc_auc,train_f1,val_f1,gap_f1,verdict
+logistic_regression,0.5807,0.5906,-0.01,0.828,0.8407,-0.0127,0.5508,0.5647,-0.0139,OK
+random_forest,0.735,0.6873,0.0476,0.8946,0.8576,0.037,0.6204,0.5814,0.039,OK
+xgboost,0.9982,0.9784,0.0197,0.9996,0.992,0.0075,0.972,0.9301,0.0418,OK
