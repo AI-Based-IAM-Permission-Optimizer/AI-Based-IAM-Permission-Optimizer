@@ -129,6 +129,6 @@ Threshold: **0.535** (optimised for F1 on validation set).
 | `outputs/final_production_predictions.csv` | 4,000-row test-set inference output |
 | `outputs/model_selection.json` | Machine-readable selection record |
 | `outputs/final_model_selection.md` | Model selection report |
-| `outputs/overfitting_analysis_report.md` | Overfitting diagnosis and RF fix |
-| `outputs/generalization_test_results.csv` | Unseen-user and unseen-RA results |
-| `outputs/overfitting_gap_analysis.csv` | Train-val gap table |
+| `docs/evaluation/overfitting_analysis_report.md` | Overfitting diagnosis and RF fix |
+| `docs/evaluation/generalization_test_results.csv` | Unseen-user and unseen-RA results |
+| `docs/evaluation/overfitting_gap_analysis.csv` | Train-val gap table |

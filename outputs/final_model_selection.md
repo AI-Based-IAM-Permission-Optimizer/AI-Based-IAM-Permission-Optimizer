@@ -189,7 +189,7 @@ scale_pos_weight:   (class-imbalance weighted)
 |---|---|
 | `outputs/final_model_selection.md` | This report |
 | `outputs/model_selection.json` | Machine-readable selection record |
-| `outputs/overfitting_gap_analysis.csv` | Train-val gaps for all models |
-| `outputs/generalization_test_results.csv` | Unseen-user and unseen-RA results |
-| `outputs/overfitting_analysis_report.md` | RF overfitting diagnosis and fix |
+| `docs/evaluation/overfitting_gap_analysis.csv` | Train-val gaps for all models |
+| `docs/evaluation/generalization_test_results.csv` | Unseen-user and unseen-RA results |
+| `docs/evaluation/overfitting_analysis_report.md` | RF overfitting diagnosis and fix |
 | `artifacts/xgboost_candidate.joblib` | Selected model artifact |

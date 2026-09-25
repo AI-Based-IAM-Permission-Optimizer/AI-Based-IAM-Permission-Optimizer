@@ -1,30 +1,30 @@
 {
-  "timestamp": "2026-09-24 20:01:46",
+  "timestamp": "2026-09-25 16:49:37",
   "notebook_executions": [
     {
       "notebook": "01_data_understanding.ipynb",
       "status": "PASSED",
-      "time_seconds": 2.61
+      "time_seconds": 3.94
     },
     {
       "notebook": "02_data_cleaning.ipynb",
       "status": "PASSED",
-      "time_seconds": 2.47
+      "time_seconds": 2.44
     },
     {
       "notebook": "03_feature_engineering.ipynb",
       "status": "PASSED",
-      "time_seconds": 2.66
+      "time_seconds": 2.48
     },
     {
       "notebook": "04_label_creation.ipynb",
       "status": "PASSED",
-      "time_seconds": 3.84
+      "time_seconds": 3.61
     },
     {
       "notebook": "05_weighted_baseline.ipynb",
       "status": "PASSED",
-      "time_seconds": 3.99
+      "time_seconds": 3.58
     },
     {
       "notebook": "06_logistic_regression.ipynb",
@@ -34,22 +34,22 @@
     {
       "notebook": "07_random_forest.ipynb",
       "status": "PASSED",
-      "time_seconds": 735.05
+      "time_seconds": 987.01
     },
     {
       "notebook": "08_xgboost.ipynb",
       "status": "PASSED",
-      "time_seconds": 24.68
+      "time_seconds": 24.2
     },
     {
       "notebook": "09_model_evaluation.ipynb",
       "status": "PASSED",
-      "time_seconds": 24.18
+      "time_seconds": 23.79
     },
     {
       "notebook": "10_final_model.ipynb",
       "status": "PASSED",
-      "time_seconds": 9.84
+      "time_seconds": 9.78
     }
   ],
   "file_verifications": {
@@ -142,7 +142,7 @@
   },
   "diagnostic_status": "PASSED",
   "efficiency_profile": {
-    "total_notebook_time_seconds": 817.58,
-    "diagnostic_time_seconds": 7.58
+    "total_notebook_time_seconds": 1069.08,
+    "diagnostic_time_seconds": 7.36
   }
 }

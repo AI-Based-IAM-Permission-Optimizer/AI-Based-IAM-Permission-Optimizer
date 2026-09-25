@@ -43,6 +43,8 @@ ROOT = Path(__file__).parent
 DATA = ROOT / "data"
 ART = ROOT / "artifacts"
 OUT = ROOT / "outputs"
+EVAL_DIR = ROOT / "docs" / "evaluation"
+EVAL_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─────────────────────────────────────────────
 # Load data & model
@@ -407,6 +409,6 @@ summary = {
     "flagged_issues": flagged,
     "overall_verdict": "GENUINE" if len(flagged)==0 else ("PARTIAL" if len(flagged)<=2 else "UNRELIABLE")
 }
-(OUT / "model_reliability_diagnostic.json").write_text(json.dumps(summary, indent=2))
-print(f"\n  Detailed results saved to: outputs/model_reliability_diagnostic.json")
+(EVAL_DIR / "model_reliability_diagnostic.json").write_text(json.dumps(summary, indent=2))
+print(f"\n  Detailed results saved to: docs/evaluation/model_reliability_diagnostic.json")
 print("=" * 70)

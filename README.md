@@ -71,22 +71,27 @@ IAM_Model_V2_Notebooks/
 │   ├── final_production_predictions.csv        # FINAL ML OUTPUT (14-column schema)
 │   ├── final_model_selection.md                # Model selection report (8 criteria)
 │   ├── model_selection.json                    # Machine-readable selection record
-│   ├── final_leakage_audit.md                  # Full leakage audit report
-│   ├── overfitting_analysis_report.md          # Overfitting diagnosis + RF fix
-│   ├── overfitting_gap_analysis.csv            # Train-val gaps: LR / RF / XGBoost
-│   ├── generalization_test_results.csv         # Unseen-user + unseen-RA results
-│   ├── model_validation_comparison.csv         # Side-by-side model metrics
-│   ├── production_verification_report.md       # Final artifact verification
-│   ├── final_cleanup_verification.json         # Latest full pipeline check
-│   ├── data_understanding_summary.json         # EDA summary
 │   ├── final_threshold_table.csv               # Threshold sensitivity analysis
-│   ├── selected_model_permutation_importance.csv
-│   ├── selected_model_thresholds_validation.csv
-│   ├── validation_error_analysis.csv
-│   └── weighted_baseline_thresholds.csv
+│   ├── production_verification_report.md       # Final artifact verification
+│   ├── verification_pipeline_summary.json      # Pipeline execution & integrity status
+│   └── notebook_run_summary.json               # Notebook execution logs
 │
 └── docs/
-    └── ML_Model_and_Output_Documentation_v2.md  # Full backend/frontend contract
+    ├── ML_Model_and_Output_Documentation_v2.md  # Full backend/frontend contract
+    └── evaluation/                              # Detailed audit, leakage & evaluation files
+        ├── final_leakage_audit.md              # Full leakage audit report
+        ├── overfitting_analysis_report.md      # Overfitting diagnosis + RF fix
+        ├── overfitting_gap_analysis.csv        # Train-val gaps: LR / RF / XGBoost
+        ├── generalization_test_results.csv     # Unseen-user + unseen-RA results
+        ├── model_validation_comparison.csv     # Side-by-side model metrics
+        ├── model_reliability_diagnostic.json   # Deep diagnostic results
+        ├── selected_model_overfit_diagnostics.csv
+        ├── selected_model_permutation_importance.csv
+        ├── selected_model_thresholds_validation.csv
+        ├── validation_error_analysis.csv
+        ├── data_understanding_summary.json
+        ├── final_cleanup_report.md
+        └── final_cleanup_verification.json
 ```
 
 ---

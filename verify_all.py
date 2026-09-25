@@ -226,7 +226,10 @@ print("STEP 5: RELIABILITY DIAGNOSTIC EXECUTION")
 print("─" * 80)
 
 t0 = time.time()
-diag_exit = os.system(f'python "{ROOT / "diagnostic.py"}" > "{OUT_DIR / "diagnostic_run.log"}" 2>&1')
+DOCS_EVAL_DIR = ROOT / "docs" / "evaluation"
+DOCS_EVAL_DIR.mkdir(parents=True, exist_ok=True)
+diag_log = DOCS_EVAL_DIR / "diagnostic_run.log"
+diag_exit = os.system(f'python "{ROOT / "diagnostic.py"}" > "{diag_log}" 2>&1')
 diag_time = time.time() - t0
 
 if diag_exit == 0:
@@ -245,8 +248,6 @@ print("STEP 6: FINAL PREDICTIONS FILE VALIDATION")
 print("─" * 80)
 
 preds_path = OUT_DIR / "final_production_predictions.csv"
-if not preds_path.exists():
-    preds_path = OUT_DIR / "final_predictions.csv"
 if preds_path.exists():
     preds = pd.read_csv(preds_path)
     print(f"  ✅ File: {preds_path.name} ({len(preds):,} rows, {len(preds.columns)} cols)")
@@ -273,7 +274,7 @@ if preds_path.exists():
         "null_counts": null_counts
     }
 else:
-    print(f"  ❌ Missing final_predictions.csv")
+    print(f"  ❌ Missing final_production_predictions.csv")
 
 # -------------------------------------------------------------
 # STEP 7: Save Full Verification Summary
