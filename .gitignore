@@ -27,3 +27,8 @@ ehthumbs.db
 
 # Runtime logs
 *.log
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
