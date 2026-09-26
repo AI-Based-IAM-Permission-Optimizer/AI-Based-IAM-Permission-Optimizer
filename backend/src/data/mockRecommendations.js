@@ -7,13 +7,13 @@ const rawMockRecommendations = Object.freeze([
   {
     recommendation_id: "rec-mock-keep-001",
     user_id: "usr-alice-01",
-    role_id: "role-dev-read",
+    role_id: "BackendDeveloper-Role",
     action: "s3:GetObject",
     resource: "arn:aws:s3:::company-shared-docs/*",
     risk_score: 0.15,
     risk_weight: 2,
     risk_level: "LOW",
-    prediction: "NORMAL",
+    prediction: "INTENDED",
     recommendation: "KEEP",
     confidence: 0.98,
     reason_codes: ["DAILY_ACCESS", "LOW_RISK_READ_ACTION"],
@@ -30,7 +30,7 @@ const rawMockRecommendations = Object.freeze([
   {
     recommendation_id: "rec-mock-review-002",
     user_id: "usr-bob-02",
-    role_id: "role-sec-auditor",
+    role_id: "SecurityEngineer-Role",
     action: "iam:GenerateCredentialReport",
     resource: "*",
     risk_score: 0.55,
@@ -53,7 +53,7 @@ const rawMockRecommendations = Object.freeze([
   {
     recommendation_id: "rec-mock-remove-003",
     user_id: "usr-charlie-03",
-    role_id: "role-contractor-temp",
+    role_id: "MLEngineer-Role",
     action: "iam:CreateUser",
     resource: "*",
     risk_score: 0.92,

@@ -19,7 +19,7 @@ function createMockRepository() {
 
 const validPayload = {
   user_id: "usr-99",
-  role_id: "rol-88",
+  role_id: "BackendDeveloper-Role",
   action: "iam:CreateUser",
   resource: "*",
   risk_score: 0.95,

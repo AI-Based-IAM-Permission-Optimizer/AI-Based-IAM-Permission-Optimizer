@@ -1,6 +1,17 @@
 const crypto = require("node:crypto");
-const { APPROVAL_STATUS, RECOMMENDATION_VALUES } = require("./recommendation.schema");
+const {
+  APPROVAL_STATUS,
+  RECOMMENDATION_VALUES,
+  PREDICTION_VALUES,
+  VALID_V2_ROLE_IDS
+} = require("./recommendation.schema");
 const { ValidationError } = require("../utils/errors");
+
+/**
+ * Maximum allowed byte length for a recommendation_id.
+ * DynamoDB primary key limit is 2048 bytes; 512 characters is a safe, generous ceiling.
+ */
+const RECOMMENDATION_ID_MAX_LENGTH = 512;
 
 /**
  * Validates and constructs a Recommendation domain entity according to the finalized ML contract.
@@ -49,6 +60,13 @@ function createRecommendationEntity(input) {
     throw new ValidationError("Field 'role_id' is required and must be a non-empty string.");
   }
 
+  const trimmedRoleId = role_id.trim();
+  if (!VALID_V2_ROLE_IDS.includes(trimmedRoleId)) {
+    throw new ValidationError(
+      `Field 'role_id' must be one of the finalized V2 role IDs. Got '${role_id}'.`
+    );
+  }
+
   if (!action || typeof action !== "string" || action.trim() === "") {
     throw new ValidationError("Field 'action' is required and must be a non-empty string.");
   }
@@ -76,6 +94,20 @@ function createRecommendationEntity(input) {
     throw new ValidationError("Field 'risk_level' is required and must be a non-empty string.");
   }
 
+  if (prediction !== undefined && prediction !== null) {
+    if (typeof prediction !== "string" || !Object.values(PREDICTION_VALUES).includes(prediction.trim())) {
+      throw new ValidationError(
+        `Field 'prediction' must be one of: ${Object.values(PREDICTION_VALUES).join(", ")}.`
+      );
+    }
+  }
+
+  if (reason_codes !== undefined && reason_codes !== null) {
+    if (!Array.isArray(reason_codes)) {
+      throw new ValidationError("Field 'reason_codes', if provided, must be an array.");
+    }
+  }
+
   if (!recommendation || !Object.values(RECOMMENDATION_VALUES).includes(recommendation)) {
     throw new ValidationError(
       `Field 'recommendation' must be one of: ${Object.values(RECOMMENDATION_VALUES).join(", ")}.`
@@ -92,10 +124,21 @@ function createRecommendationEntity(input) {
   const currentTimestamp = new Date().toISOString();
 
   // Construct entity according to finalized contract
+  let resolvedRecommendationId;
+  if (recommendation_id && typeof recommendation_id === "string" && recommendation_id.trim()) {
+    const trimmedId = recommendation_id.trim();
+    if (trimmedId.length > RECOMMENDATION_ID_MAX_LENGTH) {
+      throw new ValidationError(
+        `Field 'recommendation_id' must not exceed ${RECOMMENDATION_ID_MAX_LENGTH} characters.`
+      );
+    }
+    resolvedRecommendationId = trimmedId;
+  } else {
+    resolvedRecommendationId = crypto.randomUUID();
+  }
+
   const entity = {
-    recommendation_id: (recommendation_id && typeof recommendation_id === "string" && recommendation_id.trim())
-      ? recommendation_id.trim()
-      : crypto.randomUUID(),
+    recommendation_id: resolvedRecommendationId,
 
     user_id: user_id.trim(),
     role_id: role_id.trim(),
@@ -137,5 +180,6 @@ function createRecommendationEntity(input) {
 }
 
 module.exports = {
-  createRecommendationEntity
+  createRecommendationEntity,
+  RECOMMENDATION_ID_MAX_LENGTH
 };

@@ -32,6 +32,15 @@ function createTestApp() {
       if (filters.role_id) {
         result = result.filter((i) => i.role_id === filters.role_id);
       }
+      if (filters.next_token) {
+        if (filters.next_token === "malformed-token" || filters.next_token === "invalid-token") {
+          throw new ValidationError("Invalid next_token format.");
+        }
+      }
+      if (filters.paginate) {
+        const nextToken = filters.next_token === "valid-token" ? "next-page-token" : null;
+        return { data: result, next_token: nextToken };
+      }
       return result;
     },
     updateApproval: async (id, updateData) => {
@@ -73,7 +82,7 @@ test("GET /api/v1/recommendations returns 200 OK with recommendation items", asy
   const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations");
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.count, 3);
   assert.equal(Array.isArray(response.body.data), true);
   assert.equal(response.body.data.length, 3);
@@ -83,7 +92,7 @@ test("GET /api/v1/recommendations filters by recommendation decision", async () 
   const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?recommendation=REMOVE");
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.count, 1);
   assert.equal(response.body.data[0].recommendation, "REMOVE");
 });
@@ -92,7 +101,7 @@ test("GET /api/v1/recommendations filters by approval_status", async () => {
   const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations?approval_status=PENDING");
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.count, 3);
 });
 
@@ -116,7 +125,7 @@ test("GET /api/v1/recommendations/:id returns 200 OK for valid ID", async () => 
   const { app } = createTestApp();
   const response = await request(app).get("/api/v1/recommendations/rec-mock-remove-003");
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.data.recommendation_id, "rec-mock-remove-003");
   assert.equal(response.body.data.recommendation, "REMOVE");
 });
@@ -139,7 +148,7 @@ test("PATCH /api/v1/recommendations/:id/approve updates PENDING to APPROVED corr
     .patch("/api/v1/recommendations/rec-mock-remove-003/approve")
     .send({ approved_by: "admin@company.com" });
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.message, "Recommendation approved successfully.");
 
   const item = response.body.data;
@@ -170,7 +179,7 @@ test("PATCH /api/v1/recommendations/:id/reject updates PENDING to REJECTED corre
     .patch("/api/v1/recommendations/rec-mock-review-002/reject")
     .send({ rejection_reason: "Permission required for compliance reports." });
 
-  assert.equal(response.status, 200);
+  if (response.status !== 200) console.log(response.body); assert.equal(response.status, 200);
   assert.equal(response.body.message, "Recommendation rejected successfully.");
 
   const item = response.body.data;
@@ -222,3 +231,28 @@ test("PATCH approve/reject returns 404 for non-existent ID", async () => {
     .send({ rejection_reason: "Reason" });
   assert.equal(responseReject.status, 404);
 });
+
+/* ========================================================================== */
+/* PHASE 11 PAGINATION ROUTE TESTS                                            */
+/* ========================================================================== */
+
+test("GET /api/v1/recommendations?next_token=<valid-token> processes valid pagination token", async () => {
+  const { app } = createTestApp();
+  const response = await request(app).get("/api/v1/recommendations?next_token=valid-token");
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(response.body.data), true);
+  assert.equal(response.body.count, 3);
+  assert.equal(response.body.next_token, "next-page-token");
+});
+
+test("GET /api/v1/recommendations?next_token=<malformed-token> rejects malformed token with HTTP 400", async () => {
+  const { app } = createTestApp();
+  const response = await request(app).get("/api/v1/recommendations?next_token=malformed-token");
+
+  assert.equal(response.status, 400);
+  assert.ok(response.body.error);
+  assert.equal(typeof response.body.error.message, "string");
+  assert.ok(response.body.error.message.includes("Invalid next_token format"));
+});
+

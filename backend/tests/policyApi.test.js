@@ -39,12 +39,158 @@ function createTestPolicyApp(recommendationsStore = []) {
   return { app, mockRepo, itemsMap };
 }
 
-test("1 & 2. GET /api/v1/policies/synthetic-user-01 succeeds and resolves ApplicationDeveloper-Role to demo-developer", async () => {
+// ---------------------------------------------------------------------------
+// 20-Role V2 Mapping Resolution Tests
+// ---------------------------------------------------------------------------
+
+const EXPECTED_V2_ROLE_MAPPINGS = [
+  // demo-backend-dev (3 roles)
+  { role_id: "BackendDeveloper-Role", expected_user: "demo-backend-dev", expected_policy: "DemoBackend-OverPermissioned-Policy" },
+  { role_id: "APIDeveloper-Role", expected_user: "demo-backend-dev", expected_policy: "DemoBackend-OverPermissioned-Policy" },
+  { role_id: "FrontendDeveloper-Role", expected_user: "demo-backend-dev", expected_policy: "DemoBackend-OverPermissioned-Policy" },
+
+  // demo-data-analyst (6 roles)
+  { role_id: "DataAnalyst-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+  { role_id: "DataEngineer-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+  { role_id: "DataScientist-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+  { role_id: "CloudDataArchitect-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+  { role_id: "ResearchScientist-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+  { role_id: "ProductAnalyst-Role", expected_user: "demo-data-analyst", expected_policy: "DemoDataAnalyst-OverPermissioned-Policy" },
+
+  // demo-devops (10 roles)
+  { role_id: "DevOpsEngineer-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "CloudEngineer-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "SecurityEngineer-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "IAMAdministrator-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "DatabaseAdministrator-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "SRE-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "SecurityAnalyst-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "ApplicationSupport-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "PlatformEngineer-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+  { role_id: "MLPlatformEngineer-Role", expected_user: "demo-devops", expected_policy: "DemoDevOps-OverPermissioned-Policy" },
+
+  // demo-developer (1 role)
+  { role_id: "MLEngineer-Role", expected_user: "demo-developer", expected_policy: "DemoDeveloper-OverPermissioned-Policy" }
+];
+
+test("Every one of the 20 V2 role IDs resolves to the exact reference_user_id", async () => {
+  assert.equal(EXPECTED_V2_ROLE_MAPPINGS.length, 20);
+
+  for (const { role_id, expected_user, expected_policy } of EXPECTED_V2_ROLE_MAPPINGS) {
+    const mlUserId = `user-for-${role_id}`;
+    const store = [
+      {
+        recommendation_id: `rec-${role_id}`,
+        user_id: mlUserId,
+        role_id: role_id,
+        action: "dummy:action",
+        recommendation: "KEEP",
+        approval_status: "APPROVED"
+      }
+    ];
+
+    const { app } = createTestPolicyApp(store);
+    const response = await request(app).get(`/api/v1/policies/${mlUserId}`);
+
+    assert.equal(response.status, 200, `Expected 200 for ${role_id}`);
+    assert.equal(response.body.user_id, expected_user, `Expected ${role_id} to resolve to ${expected_user}`);
+    assert.equal(response.body.source_policy.policy_name, expected_policy);
+    assert.ok(response.body.policy);
+    assert.equal(response.body.policy.Version, "2012-10-17");
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Obsolete & Unknown Role Rejection Tests
+// ---------------------------------------------------------------------------
+
+test("ApplicationDeveloper-Role is rejected/not mapped", async () => {
+  const store = [
+    {
+      recommendation_id: "rec-obsolete-1",
+      user_id: "user-obsolete-1",
+      role_id: "ApplicationDeveloper-Role",
+      action: "s3:GetObject",
+      recommendation: "KEEP",
+      approval_status: "APPROVED"
+    }
+  ];
+
+  const { app } = createTestPolicyApp(store);
+  const response = await request(app).get("/api/v1/policies/user-obsolete-1");
+
+  assert.equal(response.status, 400);
+  assert.ok(response.body.error.message.includes("Unknown or unmapped role_id"));
+});
+
+test("DevOps-Role is rejected/not mapped", async () => {
+  const store = [
+    {
+      recommendation_id: "rec-obsolete-2",
+      user_id: "user-obsolete-2",
+      role_id: "DevOps-Role",
+      action: "s3:GetObject",
+      recommendation: "KEEP",
+      approval_status: "APPROVED"
+    }
+  ];
+
+  const { app } = createTestPolicyApp(store);
+  const response = await request(app).get("/api/v1/policies/user-obsolete-2");
+
+  assert.equal(response.status, 400);
+  assert.ok(response.body.error.message.includes("Unknown or unmapped role_id"));
+});
+
+test("Unknown role_id is rejected/not mapped", async () => {
+  const store = [
+    {
+      recommendation_id: "rec-unknown",
+      user_id: "synthetic-user-99",
+      role_id: "UnknownSuperUser-Role",
+      action: "s3:GetObject",
+      recommendation: "KEEP",
+      approval_status: "APPROVED"
+    }
+  ];
+
+  const { app } = createTestPolicyApp(store);
+  const response = await request(app).get("/api/v1/policies/synthetic-user-99");
+
+  assert.equal(response.status, 400);
+  assert.ok(response.body.error.message.includes("Unknown or unmapped role_id"));
+});
+
+test("demo-backend-dev is used as the backend reference user", async () => {
+  const store = [
+    {
+      recommendation_id: "rec-backend-1",
+      user_id: "backend-ml-user",
+      role_id: "BackendDeveloper-Role",
+      action: "secretsmanager:DeleteSecret",
+      recommendation: "REMOVE",
+      approval_status: "APPROVED"
+    }
+  ];
+
+  const { app } = createTestPolicyApp(store);
+  const response = await request(app).get("/api/v1/policies/backend-ml-user");
+
+  assert.equal(response.status, 200);
+  assert.equal(response.body.user_id, "demo-backend-dev");
+  assert.equal(response.body.source_policy.policy_name, "DemoBackend-OverPermissioned-Policy");
+});
+
+// ---------------------------------------------------------------------------
+// Policy Generation Rule & Edge Case Tests
+// ---------------------------------------------------------------------------
+
+test("GET /api/v1/policies/synthetic-user-01 succeeds with MLEngineer-Role resolving to demo-developer", async () => {
   const store = [
     {
       recommendation_id: "rec-01",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "APPROVED"
@@ -62,93 +208,12 @@ test("1 & 2. GET /api/v1/policies/synthetic-user-01 succeeds and resolves Applic
   assert.equal(response.body.policy.Version, "2012-10-17");
 });
 
-test("3. DataAnalyst-Role resolves to demo-data-analyst", async () => {
-  const store = [
-    {
-      recommendation_id: "rec-02",
-      user_id: "synthetic-user-02",
-      role_id: "DataAnalyst-Role",
-      action: "kms:DisableKey",
-      recommendation: "REMOVE",
-      approval_status: "APPROVED"
-    }
-  ];
-
-  const { app } = createTestPolicyApp(store);
-  const response = await request(app).get("/api/v1/policies/synthetic-user-02");
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.user_id, "demo-data-analyst");
-  assert.equal(response.body.source_policy.policy_name, "DemoDataAnalyst-OverPermissioned-Policy");
-});
-
-test("4. DevOps-Role resolves to demo-devops", async () => {
-  const store = [
-    {
-      recommendation_id: "rec-03",
-      user_id: "synthetic-user-03",
-      role_id: "DevOps-Role",
-      action: "cloudtrail:StopLogging",
-      recommendation: "REMOVE",
-      approval_status: "APPROVED"
-    }
-  ];
-
-  const { app } = createTestPolicyApp(store);
-  const response = await request(app).get("/api/v1/policies/synthetic-user-03");
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.user_id, "demo-devops");
-  assert.equal(response.body.source_policy.policy_name, "DemoDevOps-OverPermissioned-Policy");
-});
-
-test("5. BackendDeveloper-Role resolves to demo-backend", async () => {
-  const store = [
-    {
-      recommendation_id: "rec-04",
-      user_id: "synthetic-user-04",
-      role_id: "BackendDeveloper-Role",
-      action: "secretsmanager:DeleteSecret",
-      recommendation: "REMOVE",
-      approval_status: "APPROVED"
-    }
-  ];
-
-  const { app } = createTestPolicyApp(store);
-  const response = await request(app).get("/api/v1/policies/synthetic-user-04");
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.user_id, "demo-backend");
-  assert.equal(response.body.source_policy.policy_name, "DemoBackend-OverPermissioned-Policy");
-});
-
-test("6 & 7. Correct source policy selected after role resolution and recommendations retrieved using ML user_id", async () => {
-  const store = [
-    {
-      recommendation_id: "rec-05",
-      user_id: "ml-user-100",
-      role_id: "ApplicationDeveloper-Role",
-      action: "ec2:TerminateInstances",
-      recommendation: "REMOVE",
-      approval_status: "APPROVED"
-    }
-  ];
-
-  const { app } = createTestPolicyApp(store);
-  const response = await request(app).get("/api/v1/policies/ml-user-100");
-
-  assert.equal(response.status, 200);
-  assert.equal(response.body.source_policy.policy_name, "DemoDeveloper-OverPermissioned-Policy");
-  const actions = response.body.policy.Statement[0].Action;
-  assert.equal(actions.includes("ec2:TerminateInstances"), false);
-});
-
-test("8. KEEP recommendations retain permission", async () => {
+test("KEEP recommendations retain permission", async () => {
   const store = [
     {
       recommendation_id: "rec-06",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:GetObject",
       recommendation: "KEEP",
       approval_status: "APPROVED"
@@ -162,12 +227,12 @@ test("8. KEEP recommendations retain permission", async () => {
   assert.ok(response.body.policy.Statement[0].Action.includes("s3:GetObject"));
 });
 
-test("9. REVIEW recommendations retain permission", async () => {
+test("REVIEW recommendations retain permission", async () => {
   const store = [
     {
       recommendation_id: "rec-07",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:PutObject",
       recommendation: "REVIEW",
       approval_status: "APPROVED"
@@ -181,12 +246,12 @@ test("9. REVIEW recommendations retain permission", async () => {
   assert.ok(response.body.policy.Statement[0].Action.includes("s3:PutObject"));
 });
 
-test("10. REMOVE + PENDING retains permission", async () => {
+test("REMOVE + PENDING retains permission", async () => {
   const store = [
     {
       recommendation_id: "rec-08",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "PENDING"
@@ -200,12 +265,12 @@ test("10. REMOVE + PENDING retains permission", async () => {
   assert.ok(response.body.policy.Statement[0].Action.includes("s3:DeleteObject"));
 });
 
-test("11. REMOVE + REJECTED retains permission", async () => {
+test("REMOVE + REJECTED retains permission", async () => {
   const store = [
     {
       recommendation_id: "rec-09",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "REJECTED"
@@ -219,12 +284,12 @@ test("11. REMOVE + REJECTED retains permission", async () => {
   assert.ok(response.body.policy.Statement[0].Action.includes("s3:DeleteObject"));
 });
 
-test("12. REMOVE + APPROVED removes permission", async () => {
+test("REMOVE + APPROVED removes permission", async () => {
   const store = [
     {
       recommendation_id: "rec-10",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "APPROVED"
@@ -238,12 +303,12 @@ test("12. REMOVE + APPROVED removes permission", async () => {
   assert.equal(response.body.policy.Statement[0].Action.includes("s3:DeleteObject"), false);
 });
 
-test("13. Baseline permissions without recommendations remain", async () => {
+test("Baseline permissions without recommendations remain", async () => {
   const store = [
     {
       recommendation_id: "rec-11",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "APPROVED"
@@ -259,7 +324,7 @@ test("13. Baseline permissions without recommendations remain", async () => {
   assert.ok(actions.includes("iam:CreateUser"));
 });
 
-test("14. Unknown ML user_id returns 404", async () => {
+test("Unknown ML user_id returns 404", async () => {
   const { app } = createTestPolicyApp([]);
   const response = await request(app).get("/api/v1/policies/unknown-ml-user-id");
 
@@ -267,26 +332,7 @@ test("14. Unknown ML user_id returns 404", async () => {
   assert.ok(response.body.error.message.includes("No recommendations found"));
 });
 
-test("15. Unknown role_id returns 400", async () => {
-  const store = [
-    {
-      recommendation_id: "rec-12",
-      user_id: "synthetic-user-99",
-      role_id: "UnknownSuperUser-Role",
-      action: "s3:GetObject",
-      recommendation: "KEEP",
-      approval_status: "APPROVED"
-    }
-  ];
-
-  const { app } = createTestPolicyApp(store);
-  const response = await request(app).get("/api/v1/policies/synthetic-user-99");
-
-  assert.equal(response.status, 400);
-  assert.ok(response.body.error.message.includes("Unknown or unmapped role_id"));
-});
-
-test("16. Missing role_id returns 400", async () => {
+test("Missing role_id returns 400", async () => {
   const store = [
     {
       recommendation_id: "rec-13",
@@ -305,12 +351,12 @@ test("16. Missing role_id returns 400", async () => {
   assert.ok(response.body.error.message.includes("do not specify a valid role_id"));
 });
 
-test("17. Multiple distinct role_ids for the same user return 400 rather than choosing one", async () => {
+test("Multiple distinct role_ids for the same user return 400 rather than choosing one", async () => {
   const store = [
     {
       recommendation_id: "rec-14",
       user_id: "synthetic-user-confused",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:GetObject",
       recommendation: "KEEP",
       approval_status: "APPROVED"
@@ -318,7 +364,7 @@ test("17. Multiple distinct role_ids for the same user return 400 rather than ch
     {
       recommendation_id: "rec-15",
       user_id: "synthetic-user-confused",
-      role_id: "DevOps-Role",
+      role_id: "DevOpsEngineer-Role",
       action: "ec2:StartInstances",
       recommendation: "KEEP",
       approval_status: "APPROVED"
@@ -332,7 +378,7 @@ test("17. Multiple distinct role_ids for the same user return 400 rather than ch
   assert.ok(response.body.error.message.includes("Ambiguous policy generation"));
 });
 
-test("18. Empty user_id is rejected", async () => {
+test("Empty user_id is rejected", async () => {
   const { app } = createTestPolicyApp([]);
   const response = await request(app).get("/api/v1/policies/%20");
 
@@ -340,12 +386,12 @@ test("18. Empty user_id is rejected", async () => {
   assert.ok(response.body.error.message.includes("User ID parameter is required"));
 });
 
-test("20 & 21. No AWS IAM API is called and no live IAM resources are modified", async () => {
+test("No AWS IAM API is called and no live IAM resources are modified", async () => {
   const store = [
     {
       recommendation_id: "rec-16",
       user_id: "synthetic-user-01",
-      role_id: "ApplicationDeveloper-Role",
+      role_id: "MLEngineer-Role",
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "APPROVED"

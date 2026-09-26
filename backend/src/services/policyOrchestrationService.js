@@ -37,9 +37,13 @@ function generatePolicyForReferenceUser(userReference, recommendations) {
     policy_version: attachedPolicy ? attachedPolicy.policy_version : "2012-10-17"
   };
 
+  const actualRoleId = (recommendations && recommendations.length > 0 && recommendations[0].role_id)
+    ? recommendations[0].role_id
+    : userReference.role_id;
+
   return {
     user_id: userReference.user_id,
-    role_id: userReference.role_id,
+    role_id: actualRoleId,
     source_policy: sourcePolicy,
     policy: generatedPolicy,
     generated_at: new Date().toISOString()

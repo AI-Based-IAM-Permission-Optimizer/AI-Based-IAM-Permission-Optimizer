@@ -86,6 +86,40 @@ const RECOMMENDATION_VALUES = Object.freeze({
   REMOVE: "REMOVE"
 });
 
+/**
+ * Confirmed values for ML prediction.
+ */
+const PREDICTION_VALUES = Object.freeze({
+  INTENDED: "INTENDED",
+  EXCESSIVE: "EXCESSIVE"
+});
+
+/**
+ * Authoritative list of 20 V2 role IDs.
+ */
+const VALID_V2_ROLE_IDS = Object.freeze([
+  "BackendDeveloper-Role",
+  "APIDeveloper-Role",
+  "FrontendDeveloper-Role",
+  "DataAnalyst-Role",
+  "DataEngineer-Role",
+  "DataScientist-Role",
+  "CloudDataArchitect-Role",
+  "ResearchScientist-Role",
+  "ProductAnalyst-Role",
+  "DevOpsEngineer-Role",
+  "CloudEngineer-Role",
+  "SecurityEngineer-Role",
+  "IAMAdministrator-Role",
+  "DatabaseAdministrator-Role",
+  "SRE-Role",
+  "SecurityAnalyst-Role",
+  "ApplicationSupport-Role",
+  "PlatformEngineer-Role",
+  "MLPlatformEngineer-Role",
+  "MLEngineer-Role"
+]);
+
 module.exports = {
   CONFIRMED_PIPELINE_FIELDS,
   PENDING_BACKEND_FIELDS,
@@ -93,5 +127,7 @@ module.exports = {
   FINAL_RECOMMENDATION_FIELDS,
   APPROVAL_STATUS,
   RECOMMENDATION_STATUS,
-  RECOMMENDATION_VALUES
+  RECOMMENDATION_VALUES,
+  PREDICTION_VALUES,
+  VALID_V2_ROLE_IDS
 };

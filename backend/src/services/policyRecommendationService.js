@@ -3,14 +3,30 @@ const { generatePolicyForReferenceUser } = require("./policyOrchestrationService
 const { APPROVAL_STATUS, RECOMMENDATION_VALUES } = require("../domain/recommendation.schema");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
-/**
- * Confirmed Role-to-IAM Reference User Mapping (Authoritative for Phase 8)
- */
 const ROLE_TO_IAM_USER_MAP = Object.freeze({
-  "ApplicationDeveloper-Role": "demo-developer",
+  "BackendDeveloper-Role": "demo-backend-dev",
+  "APIDeveloper-Role": "demo-backend-dev",
+  "FrontendDeveloper-Role": "demo-backend-dev",
+
   "DataAnalyst-Role": "demo-data-analyst",
-  "DevOps-Role": "demo-devops",
-  "BackendDeveloper-Role": "demo-backend"
+  "DataEngineer-Role": "demo-data-analyst",
+  "DataScientist-Role": "demo-data-analyst",
+  "CloudDataArchitect-Role": "demo-data-analyst",
+  "ResearchScientist-Role": "demo-data-analyst",
+  "ProductAnalyst-Role": "demo-data-analyst",
+
+  "DevOpsEngineer-Role": "demo-devops",
+  "CloudEngineer-Role": "demo-devops",
+  "SecurityEngineer-Role": "demo-devops",
+  "IAMAdministrator-Role": "demo-devops",
+  "DatabaseAdministrator-Role": "demo-devops",
+  "SRE-Role": "demo-devops",
+  "SecurityAnalyst-Role": "demo-devops",
+  "ApplicationSupport-Role": "demo-devops",
+  "PlatformEngineer-Role": "demo-devops",
+  "MLPlatformEngineer-Role": "demo-devops",
+
+  "MLEngineer-Role": "demo-developer"
 });
 
 class PolicyRecommendationService {

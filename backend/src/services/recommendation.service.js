@@ -2,6 +2,12 @@ const { createRecommendationEntity } = require("../domain/recommendation.entity"
 const { APPROVAL_STATUS, RECOMMENDATION_VALUES } = require("../domain/recommendation.schema");
 const { ValidationError, NotFoundError } = require("../utils/errors");
 
+/**
+ * Maximum number of recommendation items accepted per ingestion request.
+ * The production sender is configured to send 100-record windows.
+ */
+const MAX_RECOMMENDATION_BATCH_SIZE = 100;
+
 class RecommendationService {
   /**
    * @param {import("../repositories/recommendation.repository")} repository - Instance of RecommendationRepository.
@@ -51,8 +57,8 @@ class RecommendationService {
    * @returns {Promise<Array<Object>>} List of recommendation entities.
    */
   async listRecommendations(filters = {}) {
-    const { approval_status, recommendation, user_id, role_id } = filters;
-    const validatedFilters = {};
+    const { approval_status, recommendation, user_id, role_id, next_token } = filters;
+    const validatedFilters = { paginate: true };
 
     if (approval_status) {
       const statusValue = String(approval_status).toUpperCase().trim();
@@ -80,6 +86,10 @@ class RecommendationService {
 
     if (role_id && String(role_id).trim()) {
       validatedFilters.role_id = String(role_id).trim();
+    }
+
+    if (next_token && String(next_token).trim()) {
+      validatedFilters.next_token = String(next_token).trim();
     }
 
     return await this.repository.findAll(validatedFilters);
@@ -171,6 +181,12 @@ class RecommendationService {
       throw new ValidationError("Field 'recommendations' is required and must be a non-empty array.");
     }
 
+    if (recommendations.length > MAX_RECOMMENDATION_BATCH_SIZE) {
+      throw new ValidationError(
+        `Batch size must not exceed ${MAX_RECOMMENDATION_BATCH_SIZE} items per request. Received ${recommendations.length}.`
+      );
+    }
+
     let acceptedCount = 0;
     let rejectedCount = 0;
     const recommendationIds = [];
@@ -233,5 +249,7 @@ class RecommendationService {
     };
   }
 }
+
+RecommendationService.MAX_RECOMMENDATION_BATCH_SIZE = MAX_RECOMMENDATION_BATCH_SIZE;
 
 module.exports = RecommendationService;

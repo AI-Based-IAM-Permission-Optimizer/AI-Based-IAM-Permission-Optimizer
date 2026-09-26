@@ -117,7 +117,7 @@
       ]
     },
     {
-      "user_id": "demo-backend",
+      "user_id": "demo-backend-dev",
       "role_id": null,
       "attached_policies": [
         {
@@ -127,6 +127,7 @@
             {
               "effect": "Allow",
               "action": [
+                "events:CreateEndpoint",
                 "lambda:GetFunction",
                 "lambda:InvokeFunction",
                 "lambda:UpdateFunctionCode",

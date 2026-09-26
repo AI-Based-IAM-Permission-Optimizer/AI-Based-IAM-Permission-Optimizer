@@ -17,7 +17,7 @@ test("iamReferenceData.json is valid JSON with 4 expected demo users", () => {
     "demo-developer",
     "demo-data-analyst",
     "demo-devops",
-    "demo-backend"
+    "demo-backend-dev"
   ]);
 
   for (const user of data.users) {

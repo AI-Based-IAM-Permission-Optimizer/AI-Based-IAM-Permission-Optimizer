@@ -105,14 +105,79 @@ class RecommendationRepository {
       params.ExpressionAttributeValues = expressionAttributeValues;
     }
 
-    try {
-      const response = await this.docClient.send(new ScanCommand(params));
-      return response.Items || [];
-    } catch (error) {
-      throw new RepositoryError(
-        `Failed to scan recommendations from DynamoDB table '${this.tableName}': ${error.message}`,
-        error
-      );
+    if (filters.paginate) {
+      let limit = filters.limit ? parseInt(filters.limit, 10) : 100;
+      if (isNaN(limit) || limit < 1) limit = 100;
+      let exclusiveStartKey = undefined;
+
+      if (filters.next_token) {
+        try {
+          const decoded = Buffer.from(filters.next_token, 'base64').toString('utf8');
+          exclusiveStartKey = JSON.parse(decoded);
+          // Structure validation: must be a plain object with a string recommendation_id key
+          if (
+            typeof exclusiveStartKey !== 'object' ||
+            exclusiveStartKey === null ||
+            Array.isArray(exclusiveStartKey) ||
+            typeof exclusiveStartKey.recommendation_id !== 'string' ||
+            exclusiveStartKey.recommendation_id.trim() === ''
+          ) {
+            throw new ValidationError("Invalid next_token: token does not represent a valid DynamoDB cursor.");
+          }
+        } catch (err) {
+          if (err instanceof ValidationError) throw err;
+          throw new ValidationError("Invalid next_token format.");
+        }
+      }
+
+      const items = [];
+      let lastEvaluatedKey = exclusiveStartKey;
+
+      try {
+        do {
+          if (lastEvaluatedKey) {
+            params.ExclusiveStartKey = lastEvaluatedKey;
+          } else {
+            delete params.ExclusiveStartKey;
+          }
+          const response = await this.docClient.send(new ScanCommand(params));
+          
+          if (response.Items && response.Items.length > 0) {
+            items.push(...response.Items);
+          }
+          
+          lastEvaluatedKey = response.LastEvaluatedKey;
+          
+          if (items.length >= limit) {
+            break;
+          }
+        } while (lastEvaluatedKey);
+
+        let nextToken = null;
+        if (lastEvaluatedKey) {
+          nextToken = Buffer.from(JSON.stringify(lastEvaluatedKey)).toString('base64');
+        }
+
+        return {
+          data: items,
+          next_token: nextToken
+        };
+      } catch (error) {
+        throw new RepositoryError(
+          `Failed to scan recommendations from DynamoDB table '${this.tableName}': ${error.message}`,
+          error
+        );
+      }
+    } else {
+      try {
+        const response = await this.docClient.send(new ScanCommand(params));
+        return response.Items || [];
+      } catch (error) {
+        throw new RepositoryError(
+          `Failed to scan recommendations from DynamoDB table '${this.tableName}': ${error.message}`,
+          error
+        );
+      }
     }
   }
 

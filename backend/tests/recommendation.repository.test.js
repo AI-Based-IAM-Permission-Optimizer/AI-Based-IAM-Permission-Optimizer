@@ -154,3 +154,105 @@ test("RecommendationRepository.updateApproval handles ConditionalCheckFailedExce
     (err) => err instanceof ValidationError && err.message.includes("must be PENDING")
   );
 });
+test("RecommendationRepository.findAll pagination - first page returns next_token", async () => {
+  let callCount = 0;
+  const mockDocClient = createMockDocClient(async (command) => {
+    callCount++;
+    if (callCount === 1) return { Items: [{ id: 1 }, { id: 2 }], LastEvaluatedKey: { recommendation_id: "rec-002" } };
+    return { Items: [{ id: 3 }] };
+  });
+  const repo = new RecommendationRepository(mockDocClient, "t");
+  const result = await repo.findAll({ paginate: true, limit: "2" });
+  
+  assert.equal(result.data.length, 2);
+  assert.ok(result.next_token);
+});
+
+test("RecommendationRepository.findAll pagination - uses valid next_token to resume", async () => {
+  let lastExclusiveStartKey = null;
+  const mockDocClient = createMockDocClient(async (command) => {
+    lastExclusiveStartKey = command.input.ExclusiveStartKey;
+    return { Items: [{ id: 3 }], LastEvaluatedKey: { recommendation_id: "rec-003" } };
+  });
+  const repo = new RecommendationRepository(mockDocClient, "t");
+  const token = Buffer.from(JSON.stringify({ recommendation_id: "rec-002" })).toString("base64");
+  
+  await repo.findAll({ paginate: true, next_token: token, limit: "1" });
+  assert.deepEqual(lastExclusiveStartKey, { recommendation_id: "rec-002" });
+});
+
+test("RecommendationRepository.findAll pagination - final page returns next_token null", async () => {
+  const mockDocClient = createMockDocClient(async () => {
+    return { Items: [{ id: 4 }], LastEvaluatedKey: undefined };
+  });
+  const repo = new RecommendationRepository(mockDocClient, "t");
+  
+  const result = await repo.findAll({ paginate: true });
+  assert.equal(result.data.length, 1);
+  assert.equal(result.next_token, null);
+});
+
+test("RecommendationRepository.findAll pagination - GAP-3: malformed base64 throws ValidationError", async () => {
+  const repo = new RecommendationRepository(createMockDocClient(), "t");
+  await assert.rejects(
+    () => repo.findAll({ paginate: true, next_token: "!!!invalid-b64!!!" }),
+    (err) => err instanceof ValidationError && err.message.includes("Invalid next_token")
+  );
+});
+
+test("RecommendationRepository.findAll pagination - GAP-3: valid base64 with invalid JSON throws ValidationError", async () => {
+  const repo = new RecommendationRepository(createMockDocClient(), "t");
+  const invalidJsonB64 = Buffer.from("{ invalid json }").toString("base64");
+  await assert.rejects(
+    () => repo.findAll({ paginate: true, next_token: invalidJsonB64 }),
+    (err) => err instanceof ValidationError && err.message.includes("Invalid next_token")
+  );
+});
+
+test("RecommendationRepository.findAll pagination - GAP-3: valid JSON missing recommendation_id throws ValidationError", async () => {
+  const repo = new RecommendationRepository(createMockDocClient(), "t");
+  const missingKeyB64 = Buffer.from(JSON.stringify({ foo: "bar" })).toString("base64");
+  await assert.rejects(
+    () => repo.findAll({ paginate: true, next_token: missingKeyB64 }),
+    (err) => err instanceof ValidationError && err.message.includes("Invalid next_token")
+  );
+});
+
+test("RecommendationRepository.findAll pagination - GAP-3: valid JSON with non-string recommendation_id throws ValidationError", async () => {
+  const repo = new RecommendationRepository(createMockDocClient(), "t");
+  const invalidTypeB64 = Buffer.from(JSON.stringify({ recommendation_id: 12345 })).toString("base64");
+  await assert.rejects(
+    () => repo.findAll({ paginate: true, next_token: invalidTypeB64 }),
+    (err) => err instanceof ValidationError && err.message.includes("Invalid next_token")
+  );
+});
+
+test("RecommendationRepository.findAll pagination - GAP-3: valid token still works", async () => {
+  let capturedKey = null;
+  const mockDocClient = createMockDocClient(async (command) => {
+    capturedKey = command.input.ExclusiveStartKey;
+    return { Items: [{ recommendation_id: "rec-003" }], LastEvaluatedKey: undefined };
+  });
+  const repo = new RecommendationRepository(mockDocClient, "t");
+  const validToken = Buffer.from(JSON.stringify({ recommendation_id: "rec-002" })).toString("base64");
+  const result = await repo.findAll({ paginate: true, next_token: validToken });
+
+  assert.equal(result.data.length, 1);
+  assert.deepEqual(capturedKey, { recommendation_id: "rec-002" });
+});
+
+test("RecommendationRepository.findAll pagination - accumulates items if under limit", async () => {
+  let callCount = 0;
+  const mockDocClient = createMockDocClient(async (command) => {
+    callCount++;
+    if (callCount === 1) return { Items: [{ id: 1 }], LastEvaluatedKey: { recommendation_id: "rec-001" } };
+    if (callCount === 2) return { Items: [{ id: 2 }], LastEvaluatedKey: { recommendation_id: "rec-002" } };
+    return { Items: [{ id: 3 }], LastEvaluatedKey: undefined };
+  });
+  const repo = new RecommendationRepository(mockDocClient, "t");
+  const result = await repo.findAll({ paginate: true, limit: "3" });
+  assert.equal(result.data.length, 3);
+  assert.equal(callCount, 3);
+  assert.equal(result.next_token, null);
+});
+

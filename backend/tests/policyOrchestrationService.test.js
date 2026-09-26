@@ -26,10 +26,17 @@ test("2. Returns the correct reference user_id", () => {
   assert.equal(result.user_id, "demo-developer");
 });
 
-test("3. Returns the correct reference role_id", () => {
+test("3. Returns the reference role_id when no recommendations are provided", () => {
   const devUser = getBaselineDevUser();
   const result = generatePolicyForReferenceUser(devUser, []);
   assert.equal(result.role_id, null);
+});
+
+test("3b. Extracts role_id from recommendations when present", () => {
+  const devUser = getBaselineDevUser();
+  const recs = [{ role_id: "Extracted-Role-ID", action: "s3:DeleteObject" }];
+  const result = generatePolicyForReferenceUser(devUser, recs);
+  assert.equal(result.role_id, "Extracted-Role-ID");
 });
 
 test("4. Returns source_policy.policy_name from the reference data", () => {
@@ -155,6 +162,7 @@ test("14. Does not contain or implement any user_id/role_id mapping logic", () =
   const recs = [
     {
       user_id: "different-ml-user-id", // ML user ID differs from customUserRef.user_id
+      role_id: "ml-role-id", // Overrides customUserRef.role_id
       action: "s3:DeleteObject",
       recommendation: "REMOVE",
       approval_status: "APPROVED"
@@ -163,7 +171,7 @@ test("14. Does not contain or implement any user_id/role_id mapping logic", () =
 
   const result = generatePolicyForReferenceUser(customUserRef, recs);
   assert.equal(result.user_id, "arbitrary-ref-id");
-  assert.equal(result.role_id, "arbitrary-role-id");
+  assert.equal(result.role_id, "ml-role-id");
   assert.equal(result.source_policy.policy_name, "Custom-Policy");
   assert.equal(result.policy.Statement[0].Action.includes("s3:DeleteObject"), false);
 });

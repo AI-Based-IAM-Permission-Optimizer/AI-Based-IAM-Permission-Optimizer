@@ -13,10 +13,33 @@ const RecommendationRepository = require("./repositories/recommendation.reposito
 const { createAwsClients } = require("./config/aws");
 const { errorHandler, notFoundHandler } = require("./middleware/error.middleware");
 
+/**
+ * Helper to compute CORS configuration based on environment settings.
+ *
+ * @param {Object} [env] - Environment object (defaults to process.env).
+ * @returns {import("cors").CorsOptions} CORS middleware options object.
+ */
+function getCorsOptions(env = process.env) {
+  const corsOriginsEnv = env.CORS_ORIGINS;
+  if (corsOriginsEnv && corsOriginsEnv.trim()) {
+    const origins = corsOriginsEnv.split(",").map((o) => o.trim()).filter(Boolean);
+    if (origins.includes("*")) {
+      return { origin: "*" };
+    }
+    return { origin: origins };
+  }
+
+  if (env.NODE_ENV === "production") {
+    return { origin: false };
+  }
+
+  return { origin: "*" };
+}
+
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors(getCorsOptions()));
+app.use(express.json({ limit: "1mb" }));
 
 // Base health endpoint
 app.use("/api", healthRoutes);
@@ -37,5 +60,7 @@ app.use("/api/v1/policies", createPolicyRouter(policyController));
 // Centralized error handling
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+app.getCorsOptions = getCorsOptions;
 
 module.exports = app;

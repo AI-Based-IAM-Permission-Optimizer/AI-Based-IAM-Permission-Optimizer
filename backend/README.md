@@ -40,7 +40,7 @@ Phase 7 implements Real ML HTTP Ingestion API:
 - `POST /api/v1/recommendations`: Ingests batch of ML recommendation records (`model_version`, `generated_at`, `recommendations` array) with idempotency via `recommendation_id`.
 
 Phase 8 implements Policy Generation API & Reference Integration:
-- `GET /api/v1/policies/:user_id`: Generates proposed least-privilege IAM policy envelope for ML user ID by resolving `role_id` to baseline IAM reference user (`ApplicationDeveloper-Role` -> `demo-developer`, `DataAnalyst-Role` -> `demo-data-analyst`, `DevOps-Role` -> `demo-devops`, `BackendDeveloper-Role` -> `demo-backend`).
+- `GET /api/v1/policies/:user_id`: Generates proposed least-privilege IAM policy envelope for ML user ID by resolving `role_id` to baseline IAM reference user across the 20 V2 roles (`MLEngineer-Role` -> `demo-developer`, `DataAnalyst-Role` -> `demo-data-analyst`, `DevOpsEngineer-Role` -> `demo-devops`, `BackendDeveloper-Role` -> `demo-backend-dev`, etc.).
 
 ## Available API
 

@@ -16,7 +16,7 @@ test("getAllUsers returns exactly 4 expected baseline users", () => {
     "demo-developer",
     "demo-data-analyst",
     "demo-devops",
-    "demo-backend"
+    "demo-backend-dev"
   ]);
 });
 
@@ -34,6 +34,14 @@ test("getUserById returns demo-data-analyst correctly", () => {
   assert.equal(user.user_id, "demo-data-analyst");
   assert.equal(user.attached_policies.length, 1);
   assert.equal(user.attached_policies[0].policy_name, "DemoDataAnalyst-OverPermissioned-Policy");
+});
+
+test("getUserById returns demo-backend-dev correctly", () => {
+  const user = getUserById("demo-backend-dev");
+  assert.ok(user);
+  assert.equal(user.user_id, "demo-backend-dev");
+  assert.equal(user.attached_policies.length, 1);
+  assert.equal(user.attached_policies[0].policy_name, "DemoBackend-OverPermissioned-Policy");
 });
 
 test("getUserById returns null for unknown user ID", () => {

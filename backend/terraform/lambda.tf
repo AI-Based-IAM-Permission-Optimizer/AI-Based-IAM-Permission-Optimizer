@@ -17,7 +17,7 @@ resource "aws_lambda_function" "backend" {
   filename         = local.lambda_zip_path
   source_code_hash = filemd5(local.lambda_zip_path)
   function_name    = var.lambda_function_name
-  role             = aws_iam_role.lambda_exec.arn
+  role             = data.aws_iam_role.lambda_exec.arn
   handler          = "src/lambda.handler"
   runtime          = "nodejs20.x"
   timeout          = 15
@@ -25,14 +25,12 @@ resource "aws_lambda_function" "backend" {
 
   environment {
     variables = {
-      AWS_REGION          = var.aws_region
       DYNAMODB_TABLE_NAME = var.dynamodb_table_name
       NODE_ENV            = "production"
     }
   }
 
   depends_on = [
-    aws_cloudwatch_log_group.lambda_logs,
-    aws_iam_role_policy_attachment.lambda_least_privilege_attach
+    aws_cloudwatch_log_group.lambda_logs
   ]
 }
