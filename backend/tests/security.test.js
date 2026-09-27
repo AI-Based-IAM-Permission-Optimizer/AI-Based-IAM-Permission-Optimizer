@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const request = require("supertest");
 const app = require("../src/app");
 const RecommendationController = require("../src/controllers/recommendation.controller");
 const { ValidationError, RepositoryError } = require("../src/utils/errors");
@@ -29,6 +30,24 @@ test("GAP-6: getCorsOptions returns origin '*' when CORS_ORIGINS explicitly cont
   const options = app.getCorsOptions({ CORS_ORIGINS: "*" });
   assert.equal(options.origin, "*");
 });
+
+test("CORS: production configuration with http://127.0.0.1:5500 allowed origin", () => {
+  const options = app.getCorsOptions({
+    NODE_ENV: "production",
+    CORS_ORIGINS: "http://127.0.0.1:5500"
+  });
+  assert.deepEqual(options.origin, ["http://127.0.0.1:5500"]);
+});
+
+test("CORS: OPTIONS preflight request responds successfully", async () => {
+  const response = await request(app)
+    .options("/api/v1/policies/synthetic-user-001")
+    .set("Origin", "http://127.0.0.1:5500")
+    .set("Access-Control-Request-Method", "GET");
+
+  assert.ok(response.status === 200 || response.status === 204);
+});
+
 
 /* ========================================================================== */
 /* GAP-2: SAFE LOGGING TESTS                                                 */

@@ -27,6 +27,7 @@ resource "aws_lambda_function" "backend" {
     variables = {
       DYNAMODB_TABLE_NAME = var.dynamodb_table_name
       NODE_ENV            = "production"
+      CORS_ORIGINS        = join(",", var.cors_origins)
     }
   }
 

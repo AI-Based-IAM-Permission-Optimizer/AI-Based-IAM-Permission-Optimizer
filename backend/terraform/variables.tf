@@ -15,3 +15,10 @@ variable "lambda_function_name" {
   default     = "ai-iam-permission-backend"
   description = "Name of the AWS Lambda function for the Express backend."
 }
+
+variable "cors_origins" {
+  type        = list(string)
+  default     = ["http://127.0.0.1:5500"]
+  description = "Allowed origins for API Gateway and Lambda backend CORS configuration."
+}
+

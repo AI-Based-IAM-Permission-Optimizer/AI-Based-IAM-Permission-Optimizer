@@ -2,6 +2,13 @@
 resource "aws_apigatewayv2_api" "http_api" {
   name          = "${var.lambda_function_name}-api"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = var.cors_origins
+    allow_methods = ["GET", "PATCH", "OPTIONS", "POST", "PUT", "DELETE"]
+    allow_headers = ["Content-Type", "Authorization", "X-Amz-Date", "X-Api-Key", "X-Amz-Security-Token"]
+    max_age       = 300
+  }
 }
 
 # Default auto-deploy stage

@@ -404,3 +404,14 @@ test("No AWS IAM API is called and no live IAM resources are modified", async ()
   assert.equal(response.status, 200);
   assert.ok(response.body.generated_at);
 });
+
+test("Policy endpoint returns HTTP 404 with standard error structure when user has no recommendations", async () => {
+  const { app } = createTestPolicyApp([]);
+  const response = await request(app).get("/api/v1/policies/demo-backend-dev");
+
+  assert.equal(response.status, 404);
+  assert.ok(response.body.error);
+  assert.equal(typeof response.body.error.message, "string");
+  assert.ok(response.body.error.message.includes("No recommendations found for user ID 'demo-backend-dev'"));
+});
+
