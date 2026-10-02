@@ -9,6 +9,7 @@ __pycache__/
 
 # Virtual Environments
 .env
+*.env
 .venv
 env/
 venv/
@@ -30,5 +31,28 @@ ehthumbs.db
 
 # Terraform
 .terraform/
-terraform.tfstate
-terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Raw CloudTrail / AWS logs
+data/cloudtrail_logs/
+data/*.json.gz
+data/test_cloudtrail.json
+data/test_cloudtrail.json.gz
+data/real_reference_events.json
+data/real_reference_users.json
+data/lambda_test_event.json
+data/s3_lambda_test_event.json
+data/s3_real_test_event.json
+data/sample_event.json
+
+# Temporary / test outputs
+response.json
+devops_events.json
+
+# Backup scripts
+data/generate_synthetic_data_backup.py
+
+# Generated processed datasets
+data/processed/*.csv

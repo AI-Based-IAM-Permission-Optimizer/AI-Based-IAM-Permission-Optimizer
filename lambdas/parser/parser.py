@@ -5,9 +5,8 @@ def parse_cloudtrail_event(event):
     resources = event.get("resources", [])
 
     event_source = event.get("eventSource", "")
+    service = event_source.replace(".amazonaws.com", "")
     event_name = event.get("eventName")
-
-    service = event_source.replace(".amazonaws.com", "") if event_source else None
 
     action = f"{service}:{event_name}" if service and event_name else event_name
 

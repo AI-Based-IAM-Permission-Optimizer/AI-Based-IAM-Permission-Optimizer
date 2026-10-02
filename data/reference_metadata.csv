@@ -1,0 +1,5 @@
+user_id,position,department,team,policy_attachment_date,permission_age_days,policy_attachment
+demo-developer,,,,2026-09-08 14:42:13,19,DemoDeveloper-OverPermissioned-Policy
+demo-data-analyst,,,,2026-09-08 16:18:10,19,DemoDataAnalyst-OverPermissioned-Policy
+demo-devops,,,,2026-09-08 16:21:09,19,DemoDevOps-OverPermissioned-Policy
+demo-backend-dev,,,,2026-09-08 16:23:14,19,DemoBackend-OverPermissioned-Policy
