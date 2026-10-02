@@ -166,6 +166,97 @@ def compute_explanation(row: dict, risk_score: float, codes: list, rec: str) -> 
     return " ".join(parts)
 
 
+# ── Feature Engineering Preprocessing ──────────────────────────────────────
+ACTION_VERBS = [
+    "describe", "get", "list", "head", "read", "put", "create", "update",
+    "modify", "delete", "remove", "attach", "detach", "invoke", "start",
+    "stop", "terminate", "send", "receive", "publish", "subscribe", "pass",
+    "assume", "tag", "untag"
+]
+
+
+def extract_action_family(action) -> str:
+    name = str(action).split(":", 1)[-1].lower()
+    for verb in ACTION_VERBS:
+        if name.startswith(verb):
+            return verb
+    return "other"
+
+
+def engineer_features(df_raw: pd.DataFrame) -> pd.DataFrame:
+    """
+    Derive all engineered features required by Model V2 from base IAM records.
+    If features are already present, they are preserved as-is.
+    """
+    df = df_raw.copy()
+    for col in ["first_used", "last_used"]:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce", utc=True)
+
+    if "active_days" not in df.columns:
+        if "last_used" in df.columns and "first_used" in df.columns:
+            df["active_days"] = (
+                (df["last_used"] - df["first_used"]).dt.total_seconds() / 86400.0
+            ).clip(lower=0)
+        else:
+            df["active_days"] = np.nan
+
+    if "usage_frequency" not in df.columns:
+        if "usage_count" in df.columns and "unique_days_used" in df.columns:
+            df["usage_frequency"] = (
+                df["usage_count"] / df["unique_days_used"].replace(0, np.nan)
+            ).replace([np.inf, -np.inf], np.nan)
+        else:
+            df["usage_frequency"] = np.nan
+
+    if "smoothed_failure_rate" not in df.columns:
+        fc = df["failure_count"] if "failure_count" in df.columns else 0
+        uc = df["usage_count"] if "usage_count" in df.columns else 0
+        df["smoothed_failure_rate"] = (fc + 1) / (uc + 2)
+
+    if "log_usage_count" not in df.columns and "usage_count" in df.columns:
+        df["log_usage_count"] = np.log1p(df["usage_count"].clip(lower=0))
+
+    if "log_unique_days_used" not in df.columns and "unique_days_used" in df.columns:
+        df["log_unique_days_used"] = np.log1p(df["unique_days_used"].clip(lower=0))
+
+    if "success_rate" not in df.columns:
+        if "success_count" in df.columns and "usage_count" in df.columns:
+            df["success_rate"] = np.where(
+                df["usage_count"] > 0,
+                df["success_count"] / df["usage_count"],
+                0.0
+            ).clip(0, 1)
+        else:
+            df["success_rate"] = 0.0
+
+    if "action_family" not in df.columns and "action" in df.columns:
+        df["action_family"] = df["action"].map(extract_action_family).astype(str)
+
+    op_series = df["operation_type"].fillna("").astype(str).str.upper() if "operation_type" in df.columns else pd.Series("", index=df.index)
+    if "is_delete" not in df.columns:
+        df["is_delete"] = op_series.eq("DELETE").astype(int)
+
+    if "is_permission_change" not in df.columns:
+        df["is_permission_change"] = op_series.eq("PERMISSION_CHANGE").astype(int)
+
+    if "is_security_sensitive" not in df.columns:
+        df["is_security_sensitive"] = op_series.eq("SECURITY_SENSITIVE").astype(int)
+
+    if "is_wildcard_resource" not in df.columns or "scope_breadth" not in df.columns:
+        scope = df.get("resource_scope", pd.Series("unknown", index=df.index)).fillna("unknown").astype(str).str.strip().str.lower()
+        if "is_wildcard_resource" not in df.columns:
+            df["is_wildcard_resource"] = scope.eq("*").astype(int)
+        if "scope_breadth" not in df.columns:
+            df["scope_breadth"] = np.select(
+                [scope.eq("*"), scope.eq("specific")],
+                [1.0, 0.0],
+                default=0.5
+            )
+
+    return df
+
+
 # ── Main inference function ─────────────────────────────────────────────────
 def run_inference(
     df_input: pd.DataFrame,
@@ -177,7 +268,8 @@ def run_inference(
 
     Args:
         df_input:  DataFrame containing at minimum the model's feature_columns
-                   plus identity columns (user_id, role_id, action, resource, etc.)
+                   (or base columns sufficient for engineer_features) plus identity
+                   columns (user_id, role_id, action, resource, etc.)
         model:     Model dict returned by load_model(). If None, loads the default artifact.
         threshold: Risk score threshold for EXCESSIVE prediction. Defaults to model's
                    optimal_threshold (0.535).
@@ -199,19 +291,26 @@ def run_inference(
     model_version  = model.get("model_version", "iam_permission_model_v2_final_20260924")
     thr            = threshold if threshold is not None else model.get("optimal_threshold", PREDICTION_THRESHOLD)
 
+    # Automatically derive engineered features if raw IAM columns provided
+    missing_initial = [c for c in feature_columns if c not in df_input.columns]
+    if missing_initial:
+        df_proc = engineer_features(df_input)
+    else:
+        df_proc = df_input
+
     # Validate input columns
-    missing = [c for c in feature_columns if c not in df_input.columns]
+    missing = [c for c in feature_columns if c not in df_proc.columns]
     if missing:
         raise ValueError(f"Input DataFrame is missing required feature columns: {missing}")
 
     # Coerce to float so XGBoost can handle NaN natively
-    X = df_input[feature_columns].copy().astype({c: "float64" for c in feature_columns
-              if df_input[feature_columns][c].dtype.kind in ("i", "u")})
+    X = df_proc[feature_columns].copy().astype({c: "float64" for c in feature_columns
+              if df_proc[feature_columns][c].dtype.kind in ("i", "u")})
     risk_scores = estimator.predict_proba(X)[:, 1]
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     records = []
-    for i, (_, row) in enumerate(df_input.iterrows()):
+    for i, (_, row) in enumerate(df_proc.iterrows()):
         score = float(risk_scores[i])
         pred  = "EXCESSIVE" if score >= thr else "INTENDED"
         rec   = score_to_recommendation(score)
@@ -225,6 +324,8 @@ def run_inference(
             str(row.get("resource", "")),
         )
         rw = row.get("risk_weight")
+        rl = row.get("risk_level")
+        rl_val = None if (rl is None or (isinstance(rl, float) and np.isnan(rl)) or str(rl).strip().lower() in ("nan", "none", "")) else str(rl).strip()
         records.append({
             "recommendation_id": rid,
             "user_id":           str(row.get("user_id", "")),
@@ -233,7 +334,7 @@ def run_inference(
             "resource":          str(row.get("resource", "")),
             "risk_score":        round(score, 6),
             "risk_weight":       int(rw) if rw is not None and not (isinstance(rw, float) and np.isnan(rw)) else None,
-            "risk_level":        str(row.get("risk_level", "")),
+            "risk_level":        rl_val,
             "prediction":        pred,
             "recommendation":    rec,
             "reason_codes":      json.dumps(codes),
