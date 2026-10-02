@@ -130,6 +130,41 @@ class TestSendRecommendations(unittest.TestCase):
 
             mock_post.assert_not_called()
 
+    @patch("send_recommendations.load_and_transform_csv")
+    def test_main_all_flag_creates_multiple_chunks(self, mock_load):
+        from send_recommendations import main
+        # Create 250 dummy items to simulate 3 chunks (100, 100, 50)
+        dummy_items = [self.valid_csv_row.copy() for _ in range(250)]
+        for i, item in enumerate(dummy_items):
+            item["recommendation_id"] = f"REC-{i}"
+            item["user_id"] = f"USER-{i}"
+
+        mock_load.return_value = dummy_items
+
+        test_args = ["send_recommendations.py", "--all", "--dry-run"]
+        with patch("sys.argv", test_args), patch("builtins.print") as mock_print:
+            main()
+
+        # Should see output for 3 chunks
+        mock_print.assert_any_call("\n--- Batch 1/3 ---")
+        mock_print.assert_any_call("\n--- Batch 2/3 ---")
+        mock_print.assert_any_call("\n--- Batch 3/3 ---")
+
+    @patch("send_recommendations.load_and_transform_csv")
+    def test_main_payload_size_limit(self, mock_load):
+        from send_recommendations import main
+        # Create a dummy item that is absurdly large to trip the 1MB limit in a single chunk
+        large_item = self.valid_csv_row.copy()
+        large_item["explanation"] = "A" * (1024 * 1024 + 10)
+
+        mock_load.return_value = [large_item]
+
+        test_args = ["send_recommendations.py", "--limit", "1", "--dry-run"]
+        with patch("sys.argv", test_args):
+            with self.assertRaises(ValueError) as ctx:
+                main()
+            self.assertIn("exceeds 1MB limit", str(ctx.exception))
+
     def test_create_batch_envelope_structure(self):
         item = transform_row(self.valid_csv_row)
         envelope = create_batch_envelope([item])

@@ -356,6 +356,11 @@ def main():
         help="Limit number of records to read (default: 3 for safe controlled batch)",
     )
     parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Process all records in the CSV in chunks of up to 100 (ignores --limit)",
+    )
+    parser.add_argument(
         "--send",
         action="store_true",
         help="Explicit flag to execute live HTTP POST request to API endpoint (without --send, script runs in dry-run mode)",
@@ -373,23 +378,37 @@ def main():
 
     args = parser.parse_args()
 
+    if args.all:
+        args.limit = None
+
     # Load and transform CSV
     items = load_and_transform_csv(args.csv_path, start=args.start, limit=args.limit)
-    envelope = create_batch_envelope(items)
+
+    CHUNK_SIZE = 100
+    chunks = [items[i:i + CHUNK_SIZE] for i in range(0, len(items), CHUNK_SIZE)]
 
     is_live = args.send and not args.dry_run
 
-    # Print summary
-    print_batch_summary(envelope, live_send=is_live)
+    print(f"\nLoaded {len(items)} items. Divided into {len(chunks)} chunk(s) of max size {CHUNK_SIZE}.")
+
+    for idx, chunk in enumerate(chunks, 1):
+        envelope = create_batch_envelope(chunk)
+        payload_size_bytes = len(json.dumps(envelope).encode("utf-8"))
+
+        if payload_size_bytes > 1024 * 1024:
+            raise ValueError(f"Batch {idx} payload size ({payload_size_bytes} bytes) exceeds 1MB limit.")
+
+        print(f"\n--- Batch {idx}/{len(chunks)} ---")
+        print_batch_summary(envelope, live_send=is_live)
+        print(f"Payload Size: {payload_size_bytes} bytes")
+
+        if is_live:
+            print(f"Sending live batch {idx}/{len(chunks)} ({len(chunk)} records) to: {args.api_url}")
+            send_batch(args.api_url, envelope)
 
     if not is_live:
         print("\nNotice: Running in DRY-RUN mode. No HTTP requests were sent.")
         print("To send live batch, include the --send flag.")
-        return
-
-    # Live Send Execution
-    print(f"\nSending live batch of {len(items)} records to: {args.api_url}")
-    send_batch(args.api_url, envelope)
 
 
 if __name__ == "__main__":
