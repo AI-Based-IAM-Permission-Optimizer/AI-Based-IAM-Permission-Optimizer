@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>IAM Guard — Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <div class="login-art">
+                <div class="brand-large">iam<span>guard</span></div><small>IDENTITY & ACCESS GOVERNANCE</small>
+                <h1>Least privilege,<br><em>reviewed by humans.</em></h1>
+                <p>Security review workspace for least-privilege IAM governance.</p>
+            </div>
+            <div class="login-card"><label>AUTHORIZED REVIEWER</label>
+                <h2>Admin sign in</h2>
+                <p>Only the Admin/Security Reviewer signs into this dashboard. The four IAM users are analyzed
+                    identities, not dashboard accounts.</p>
+                <form id="loginForm">
+                    <label>Email
+                        <input id="email" type="email" value="admin@iamguard.local" autocomplete="username" required>
+                    </label>
+                    <label>Password</label>
+                    <div class="password-wrap">
+                        <input id="password" type="password" autocomplete="current-password" required>
+                        <button type="button" id="togglePassword" class="password-toggle" aria-label="Show password" title="Show password">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                        </button>
+                    </div>
+                    <button type="button" id="forgotPassword" class="forgot-password">Forgot password?</button>
+                    <div id="loginError"></div><button class="primary">Sign in as Admin →</button>
+                </form>
+                <div class="creds">Authorized Security Reviewer access</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resetModal" class="reset-modal hidden" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+        <div class="reset-card">
+            <button type="button" id="closeReset" class="reset-close" aria-label="Close">×</button>
+            <div class="reset-label">ACCOUNT RECOVERY</div>
+            <h2 id="resetTitle">Reset password</h2>
+            <p id="resetMessage">Enter your Admin email address to continue.</p>
+            <form id="resetForm">
+                <label>Admin email
+                    <input id="resetEmail" type="email" autocomplete="email" placeholder="admin@iamguard.local" required>
+                </label>
+                <div id="newPasswordFields" class="hidden">
+                    <label>New password
+                        <div class="password-wrap">
+                            <input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Enter new password">
+                            <button type="button" id="toggleNewPassword" class="password-toggle" aria-label="Show password" title="Show password">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                            </button>
+                        </div>
+                    </label>
+                    <label>Confirm password
+                        <div class="password-wrap">
+                            <input id="confirmPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Confirm new password">
+                            <button type="button" id="toggleConfirmPassword" class="password-toggle" aria-label="Show password" title="Show password">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                            </button>
+                        </div>
+                    </label>
+                </div>
+                <div id="resetError"></div>
+                <button type="submit" id="resetSubmit" class="primary">Verify email</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app" class="app hidden">
+        <aside>
+            <div class="brand"><div>iam<span>guard</span></div><small>SECURITY OPERATIONS</small></div>
+            <nav>
+                <div class="nav-label">GOVERNANCE</div>
+                <a class="nav active" data-view="recommendations"><span class="nav-icon">⌁</span><span>Recommendations</span><b id="pendingBadge">0</b></a>
+                <a class="nav" data-view="policies"><span class="nav-icon">▣</span><span>Policies</span></a>
+                <a class="nav" data-view="audit"><span class="nav-icon">◌</span><span>Audit Log</span></a>
+                <div class="nav-label">IDENTITIES</div>
+                <a class="nav" data-view="users"><span class="nav-icon">♙</span><span>Users</span></a>
+                <a class="nav" data-view="roles"><span class="nav-icon">◆</span><span>Roles</span></a>
+            </nav>
+            <div class="pipeline"><small>DECISION PIPELINE</small>
+                <div>✓ IAM activity</div>
+                <div>✓ ML analysis</div>
+                <div class="current">→ Admin review</div>
+                <div>○ Audit decision</div>
+            </div>
+            <div class="admin">
+                <div class="avatar">A</div>
+                <div><b>Admin</b><small>Security Reviewer</small></div><button id="logout">↪</button>
+            </div>
+            <div class="access-state"><span></span>Authorized access</div>
+        </aside>
+        <main>
+            <header>
+                <div class="global-search">⌕<input id="globalSearch"
+                        placeholder="Search users, permissions, recommendations…"></div>
+                <div class="header-actions"><span class="online">● Pipeline
+                        online</span><button>♧</button><button>⚙</button><button id="theme">☾ Dark</button>
+                    <div class="avatar">A</div>
+                </div>
+            </header>
+            <section id="recommendations" class="view">
+                <div class="heading">
+                    <div><small>ML → RECOMMENDATION → ADMIN REVIEW</small>
+                        <h1>Recommendations</h1>
+                        <p>Review least-privilege recommendations generated from processed IAM activity.</p>
+                    </div><span class="pill green">● Analysis pipeline ready</span>
+                </div>
+                <div class="stats">
+                    <article>Total<strong id="total">0</strong><small>generated</small></article>
+                    <article>Pending<strong id="pending">0</strong><small>needs review</small></article>
+                    <article>High / critical<strong id="high">0</strong><small>priority</small></article>
+                    <article>Audit decisions<strong id="resolved">0</strong><small>recorded</small></article>
+                </div>
+                <div class="toolbar"><div class="filter-label">FILTERS</div><select
+                        id="risk">
+                        <option>ALL</option>
+                        <option>CRITICAL</option>
+                        <option>HIGH</option>
+                        <option>MEDIUM</option>
+                        <option>LOW</option>
+                    </select><select id="status">
+                        <option>ALL</option>
+                        <option>PENDING</option>
+                        <option>APPROVED</option>
+                        <option>REJECTED</option>
+                    </select></div>
+                <div id="list" class="card"></div>
+            </section>
+            <section id="detail" class="view hidden"><button class="back" id="back">← Back to recommendations</button>
+                <div id="detailBox"></div>
+            </section>
+            <section id="policies" class="view hidden">
+                <div class="heading">
+                    <div><small>POLICY INVENTORY</small>
+                        <h1>Policies</h1>
+                        <p>Policies attached to the IAM identities.</p>
+                    </div>
+                </div>
+                <div id="policiesBox"></div>
+            </section>
+            <section id="audit" class="view hidden">
+                <div class="heading">
+                    <div><small>DECISION HISTORY</small>
+                        <h1>Audit Log</h1>
+                        <p>Every Admin approve/reject decision is recorded here.</p>
+                    </div>
+                </div>
+                <div id="auditBox" class="card"></div>
+            </section>
+            <section id="users" class="view hidden">
+                <div class="heading">
+                    <div><small>CLOUDTRAIL / PROCESSED ACTIVITY</small>
+                        <h1>Users</h1>
+                        <p>These are AWS IAM identities, not dashboard accounts.</p>
+                    </div>
+                </div>
+                <div class="notice">Dashboard authentication belongs only to the Admin/Security Reviewer. User activity
+                    below represents CloudTrail data processed by the pipeline.</div>
+                <div id="usersBox" class="grid2"></div>
+            </section>
+            <section id="roles" class="view hidden">
+                <div class="heading">
+                    <div><small>IAM ACCESS MODEL</small>
+                        <h1>Roles</h1>
+                        <p>Role-to-permission access model.</p>
+                    </div>
+                </div>
+                <div id="rolesBox" class="grid2"></div>
+            </section>
+            <footer>IAM GUARD / IDENTITY ACCESS GOVERNANCE <span>SECURITY REVIEW WORKFLOW</span></footer>
+        </main>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
